@@ -8,32 +8,15 @@ import { getProperty } from "../services/estate";
 import type { ApiError, Catalogue, Device, Property } from "../types";
 import { suggestDeviceCode } from "../utils/codes";
 
-// ``code`` and ``name`` are null while they follow the suggestion and hold the user's text once
-// they edit them.
-const ADDRESS_HINTS: Record<string, string> = {
-  knx: "KNX-Gruppenadresse, z. B. 1/2/3",
-  bacnet: "Geräte-ID:Objekt, z. B. 1001:analog-input,3",
-  modbus: "Unit/Register, z. B. 1/40001",
-  mqtt: "Topic, z. B. haus/101/temperatur",
-  simulator: "leer lassen",
-  vendor_api: "Kennung beim Hersteller",
-};
-
-const EMPTY: {
-  code: string | null;
-  name: string | null;
-  kind: string;
-  protocol: string;
-  location: string;
-  address: string;
-} = {
+// ``code`` is null while it follows the suggestion and holds the user's text once they edit it.
+// The name is always "<Art> <Ort>"; the bus address comes with the import from the building (SB2).
+const EMPTY: { code: string | null; kind: string; protocol: string; location: string } = {
   code: null,
-  name: null,
   kind: "",
   protocol: "",
   location: "",
-  address: "",
 };
+
 
 export default function PropertyPage() {
   const { code = "" } = useParams();
@@ -67,8 +50,7 @@ export default function PropertyPage() {
   }, [loadDevices]);
 
   const labelOf = (kind: string) => catalogue?.kinds.find((k) => k.kind === kind)?.label ?? kind;
-  const deviceName =
-    form.name ?? (form.location.trim() ? `${labelOf(form.kind)} ${form.location.trim()}` : "");
+  const deviceName = form.location.trim() ? `${labelOf(form.kind)} ${form.location.trim()}` : "";
   const deviceCode =
     form.code ??
     suggestDeviceCode({
@@ -88,8 +70,7 @@ export default function PropertyPage() {
         name: deviceName,
         kind: form.kind,
         protocol: form.protocol,
-        location: form.location || undefined,
-        address: form.address || undefined,
+        location: form.location.trim(),
       });
       setForm((f) => ({ ...EMPTY, kind: f.kind, protocol: f.protocol }));
       await loadDevices();
@@ -131,14 +112,13 @@ export default function PropertyPage() {
             <th className="p-2">Name</th>
             <th className="p-2">Art</th>
             <th className="p-2">Protokoll</th>
-            <th className="p-2">Busadresse</th>
             <th className="p-2">Steuerung</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-ink/10">
           {devices.length === 0 && (
             <tr>
-              <td colSpan={7} className="p-4 text-ink/60">
+              <td colSpan={6} className="p-4 text-ink/60">
                 Keine Geräte.
               </td>
             </tr>
@@ -150,7 +130,6 @@ export default function PropertyPage() {
               <td className="p-2">{d.name}</td>
               <td className="p-2">{labelOf(d.kind)}</td>
               <td className="p-2">{d.protocol}</td>
-              <td className="p-2 font-mono text-xs">{d.address ?? "–"}</td>
               <td className="p-2">
                 {d.safety ? (
                   <span className="inline-flex items-center gap-1 rounded bg-burgundy-light px-2 py-0.5 text-xs text-burgundy">
@@ -182,7 +161,7 @@ export default function PropertyPage() {
           <input
             className={inputClass}
             value={form.location}
-            placeholder="Zimmer oder Bereich, z. B. 101"
+            placeholder="Zimmernummer, Flur o. ä."
             onChange={(e) => setForm({ ...form, location: e.target.value })}
           />
         </Field>
@@ -196,21 +175,11 @@ export default function PropertyPage() {
               ))}
           </select>
         </Field>
-        <Field label="Name">
-          <input className={inputClass} value={deviceName} onChange={(e) => setForm({ ...form, name: e.target.value || null })} />
-        </Field>
         <Field label="Code">
           <input className={inputClass} value={deviceCode} onChange={(e) => setForm({ ...form, code: e.target.value || null })} />
         </Field>
-        <Field label="Busadresse (optional)">
-          <input
-            className={inputClass}
-            value={form.address}
-            placeholder={ADDRESS_HINTS[form.protocol] ?? ""}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
-          />
-        </Field>
-        <p className="col-span-2 text-xs text-ink/60">
+        <p className="text-xs text-ink/60">
+          {deviceName ? <span className="block font-medium text-ink">{deviceName}</span> : null}
           {selectedIsSafety ? "Sicherheitsgerät: wird nur gelesen, nie gesteuert." : ""}
         </p>
         <button type="submit" className={buttonClass} disabled={!deviceCode || !deviceName}>

@@ -61,43 +61,13 @@ describe("PropertyPage", () => {
     expect(within(valveRow).getByText("steuerbar")).toBeInTheDocument();
   });
 
-  it("registers a device and reloads the list", async () => {
-    const register = vi.spyOn(devices, "registerDevice").mockResolvedValue(valve);
-    renderPage();
-    await screen.findByText("Heizventil 101");
-    await userEvent.type(screen.getByLabelText("Code"), "102-V");
-    await userEvent.type(screen.getByLabelText("Name"), "Heizventil 102");
-    await userEvent.type(screen.getByLabelText("Ort"), "102");
-    await userEvent.type(screen.getByLabelText("Busadresse (optional)"), "1/2/4");
-    await userEvent.click(screen.getByRole("button", { name: "Gerät anlegen" }));
-    expect(register).toHaveBeenCalledWith("HAM1", {
-      code: "102-V",
-      name: "Heizventil 102",
-      kind: "valve",
-      protocol: "knx",
-      location: "102",
-      address: "1/2/4",
-    });
-    expect(devices.listDevices).toHaveBeenCalledTimes(2);
-  });
-
-  it("suggests the device code from location and kind", async () => {
-    const register = vi.spyOn(devices, "registerDevice").mockResolvedValue(valve);
-    renderPage();
-    await screen.findByText("Heizventil 101");
-    await userEvent.type(screen.getByLabelText("Ort"), "101");
-    expect(screen.getByLabelText("Code")).toHaveValue("101-VALVE");
-    await userEvent.type(screen.getByLabelText("Name"), "Heizventil 101 Bad");
-    await userEvent.click(screen.getByRole("button", { name: "Gerät anlegen" }));
-    expect(register).toHaveBeenCalledWith("HAM1", expect.objectContaining({ code: "101-VALVE" }));
-  });
-
-  it("suggests the device name from kind and location", async () => {
+  it("registers a device from kind, location and protocol and reloads the list", async () => {
     const register = vi.spyOn(devices, "registerDevice").mockResolvedValue(valve);
     renderPage();
     await screen.findByText("Heizventil 101");
     await userEvent.type(screen.getByLabelText("Ort"), "102");
-    expect(screen.getByLabelText("Name")).toHaveValue("Heizventil 102");
+    expect(screen.getByText("Heizventil 102")).toBeInTheDocument();
+    expect(screen.getByLabelText("Code")).toHaveValue("102-VALVE");
     await userEvent.click(screen.getByRole("button", { name: "Gerät anlegen" }));
     expect(register).toHaveBeenCalledWith("HAM1", {
       code: "102-VALVE",
@@ -105,23 +75,21 @@ describe("PropertyPage", () => {
       kind: "valve",
       protocol: "knx",
       location: "102",
-      address: undefined,
     });
+    expect(devices.listDevices).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps a name the user typed", async () => {
+  it("asks for the location with a hint and no postal or bus address", async () => {
     renderPage();
     await screen.findByText("Heizventil 101");
-    await userEvent.type(screen.getByLabelText("Name"), "Ventil Bad");
-    await userEvent.type(screen.getByLabelText("Ort"), "103");
-    expect(screen.getByLabelText("Name")).toHaveValue("Ventil Bad");
+    expect(screen.getByLabelText("Ort")).toHaveAttribute("placeholder", "Zimmernummer, Flur o. ä.");
+    expect(screen.queryByLabelText(/adresse/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Name")).not.toBeInTheDocument();
   });
 
-  it("shows the bus address format of the chosen protocol", async () => {
+  it("needs a location before a device can be registered", async () => {
     renderPage();
     await screen.findByText("Heizventil 101");
-    expect(screen.getByLabelText("Busadresse (optional)")).toHaveAttribute("placeholder", "KNX-Gruppenadresse, z. B. 1/2/3");
-    await userEvent.selectOptions(screen.getByLabelText("Protokoll"), "bacnet");
-    expect(screen.getByLabelText("Busadresse (optional)")).toHaveAttribute("placeholder", "Geräte-ID:Objekt, z. B. 1001:analog-input,3");
+    expect(screen.getByRole("button", { name: "Gerät anlegen" })).toBeDisabled();
   });
 });
