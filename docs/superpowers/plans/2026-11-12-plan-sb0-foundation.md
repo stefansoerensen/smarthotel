@@ -90,6 +90,7 @@ PostgreSQL 16; React 18, TypeScript strict, Vite, Tailwind, Vitest; GitHub Actio
 - [x] Properties page (list + create for admins), property page with the device registry
   (filter by kind, register a device, safety devices marked "read only")
 - [x] Vitest component tests for login and the registry
+- [x] Tenant form for admins on the properties page (added after the first deploy)
 
 ### Task 7: Delivery pipeline
 

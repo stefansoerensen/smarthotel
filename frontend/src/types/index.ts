@@ -23,6 +23,11 @@ export interface Tenant {
   is_active: boolean;
 }
 
+export interface TenantInput {
+  code: string;
+  name: string;
+}
+
 export interface Property {
   code: string;
   tenant_code: string;

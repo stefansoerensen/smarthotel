@@ -1,4 +1,4 @@
-import type { Page, Property, PropertyInput, Tenant } from "../types";
+import type { Page, Property, PropertyInput, Tenant, TenantInput } from "../types";
 import { api } from "./api";
 
 export async function listTenants(): Promise<Page<Tenant>> {
@@ -15,4 +15,8 @@ export async function getProperty(code: string): Promise<Property> {
 
 export async function createProperty(input: PropertyInput): Promise<Property> {
   return (await api.post<Property>("/properties", input)).data;
+}
+
+export async function createTenant(input: TenantInput): Promise<Tenant> {
+  return (await api.post<Tenant>("/tenants", input)).data;
 }

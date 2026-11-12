@@ -64,5 +64,5 @@
 | `hooks/useAuthStore.ts` | Token and user (Zustand) |
 | `components/Layout.tsx`, `components/Field.tsx` | Shell, form field |
 | `pages/LoginPage.tsx` | Anmeldung |
-| `pages/PropertiesPage.tsx` | Häuser, anlegen (admin) |
+| `pages/PropertiesPage.tsx` | Häuser; Mandant und Haus anlegen (admin) |
 | `pages/PropertyPage.tsx` | Haus mit Geräteregister |

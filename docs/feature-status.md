@@ -14,7 +14,7 @@ still have to be used once on the deployed app.**
 | SB3 — Coupling with the Hotel OS | 0 | Open |
 | SB4 — Energy | 0 | Open |
 
-Counts: 18 endpoints · 6 tables · 29 backend tests (+1 migration drift) · 4 frontend tests.
+Counts: 18 endpoints · 6 tables · 29 backend tests (+1 migration drift) · 7 frontend tests.
 
 ## 2. Features
 
@@ -32,6 +32,7 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Device registry with catalogue and filters | Devices | Done | SB0·5 | Kinds, protocols, location, retire instead of delete. |
 | Safety devices read only | Devices | Done | SB0·5 | ADR-0003. |
 | Frontend: login, Häuser, Geräteregister | Frontend | Done | SB0·6 | |
+| Frontend: Mandant anlegen (admin) | Frontend | In progress | SB0·6 | Pushed; CI and the deployed form not checked yet. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
 
@@ -46,3 +47,5 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 - 2026-11-12 — Railway: 39ab656 deployed. Checked on the app: health ok with database, unknown
   `/api` path JSON 404, `/api/auth/me` and `/api/properties` 401 without token, wrong login 401
   with `auth.invalid_credentials`, `/properties` serves the SPA, login page renders.
+- 2026-11-12 — Frontend: tenant form on the Häuser page for admins; the property form appears
+  once a tenant exists.
