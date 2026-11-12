@@ -1,0 +1,96 @@
+# Deployment
+
+The application is deployed to Railway from GitHub. Every deploy is gated on a green CI run on
+`main`. Nothing is built, run or tested on a developer machine.
+
+## Topology
+
+Two Railway services in one project:
+
+| Service | What it is |
+|---|---|
+| `Postgres` | Railway managed PostgreSQL 16 |
+| `app` | the repository `Dockerfile`: FastAPI + the built frontend |
+
+`app` talks to `Postgres` over the project's private network (`postgres.railway.internal`), so the
+traffic is not billed as egress.
+
+## One-time setup in the Railway dashboard
+
+These steps are performed by a human in the browser; there is no infrastructure-as-code.
+
+1. **Create the project.** Railway → *New Project* → *Empty Project*. Name it `smarthotel`.
+2. **Add the database.** *New* → *Database* → *Add PostgreSQL*. Wait until it is healthy.
+3. **Add the application service.** *New* → *GitHub Repo* → `stefansoerensen/smarthotel`, branch
+   `main`. Railway detects the root `Dockerfile` and builds it; no Nixpacks configuration is needed.
+4. **Set the variables** on the `app` service (*Variables* tab). `DATABASE_URL` is added with
+   *New Variable* → *Add Reference* → the Postgres service's `DATABASE_URL`, which resolves to the
+   internal hostname.
+
+   | Variable | Value |
+   |---|---|
+   | `DATABASE_URL` | reference to the Postgres service (internal hostname) |
+   | `ENVIRONMENT` | `production` |
+   | `JWT_SECRET` | a fresh random string, at least 32 characters (`openssl rand -hex 32`) |
+   | `ADMIN_USERNAME` | the real administrator's login name |
+   | `ADMIN_PASSWORD` | a strong password for that account |
+   | `ACCESS_TOKEN_EXPIRE_MINUTES` | `480` (optional; this is the default) |
+   | `CORS_ORIGINS` | leave unset — the deployment is same-origin |
+
+   The application rewrites `DATABASE_URL` from `postgresql://…` to `postgresql+asyncpg://…` and
+   drops a `sslmode` parameter, so the reference value can be used unchanged. Startup fails with a
+   clear message if `JWT_SECRET` is missing, shorter than 32 characters, or a known development
+   value.
+5. **Pre-deploy command** (*Settings* → *Deploy* → *Pre-deploy Command*):
+   ```
+   sh -lc 'python -m alembic upgrade head && python -m app.seed.bootstrap'
+   ```
+   The `sh -lc` wrapper is required. Without it the platform does not interpret `&&`: the first
+   command runs, the second is skipped silently, and the release still succeeds — which is how a
+   deployment ends up migrated but without an administrator account.
+   It runs before the new container receives traffic. A failing migration aborts the deploy and the
+   previous version keeps serving.
+6. **Health check** (*Settings* → *Deploy*): path `/api/health`, timeout 30 s. The endpoint also
+   executes `SELECT 1`, so it fails when the database is unreachable.
+7. **Wait for CI** (*Settings* → *Source* → *Wait for CI*): enable it. Railway then deploys a commit
+   only after all GitHub checks for it are green.
+8. **Generate a public domain** (*Settings* → *Networking* → *Generate Domain*). Railway injects
+   `PORT`; the start command is `exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}` and
+   is baked into the image.
+9. **Replicas**: one. The login rate limiter is per process.
+10. **Region**: put `app` and `Postgres` in the same region (lesson from pms-clone, hub b52).
+
+## Naming guard
+
+CI fails if the name of the reference PMS whose API `pms-clone` mirrors appears in any tracked file
+name or body. The string itself is not stored in the repository: set the GitHub repository variable
+`FORBIDDEN_VENDOR_NAME` (*Settings* → *Secrets and variables* → *Actions* → *Variables*) to the same
+value as in `pms-clone`. The guard fails while the variable is unset, so it cannot be skipped by
+accident.
+
+## Demo data
+
+There is no demo seed yet; SB1 brings the room simulator and generated demo properties.
+
+## Generating a migration
+
+Model changes need an Alembic revision in the same commit. Write it by hand or generate it against
+a throwaway database; the `backend` job's *Migration drift* step proves it matches the models.
+
+## Operating
+
+- Logs and metrics: the Railway dashboard, or `railway logs --service app`.
+- Database backups: Railway's managed Postgres backups. **Verify the retention offered by the active
+  plan before this deployment holds anything that matters** — no independent dump is taken.
+- Expected cost for two always-on services is roughly $8–12 per month (RAM $10/GB, vCPU $20/vCPU,
+  volume $0.15/GB).
+- There is no staging environment: `main` is production.
+- **A forgotten administrator password** takes three steps, because bootstrap only *creates* a
+  missing administrator and never resets an existing one. Dev users do not exist in production, so
+  there is no second way in.
+  1. Set the new `ADMIN_PASSWORD` on the `app` service.
+  2. Delete the row: `railway connect Postgres`, then
+     `DELETE FROM smarthotel.users WHERE username = '<ADMIN_USERNAME>';`
+  3. Recreate it: `railway run --service app python -m app.seed.bootstrap`.
+- Nothing is ever patched inside a running container. Runtime problems are diagnosed from the logs
+  and fixed by another push.
