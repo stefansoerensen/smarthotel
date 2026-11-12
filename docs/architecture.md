@@ -33,11 +33,11 @@ estate   → platform             properties (Häuser)
 devices  → estate, platform     gateways, devices, device catalogue
 twin     → devices, estate, platform   room types, rooms, twin points, rollout, simulator
 edge     → twin, devices, estate, platform   commands to gateways
+integration → edge, twin, devices, estate, platform   Hotel OS link, occupancy sync, faults
 ```
 
-Enforced by `backend/tests/architecture/test_module_boundaries.py`. Planned additions:
-`integration` (SB3: the Hotel OS coupling — depends on everything, nothing depends on it),
-`energy` (SB4).
+Enforced by `backend/tests/architecture/test_module_boundaries.py`. Nothing depends on
+`integration`. Planned addition: `energy` (SB4).
 
 ## Digital twin (SB1, ADR-0005)
 
@@ -67,7 +67,7 @@ Every state change emits an event into `outbox_events` in the same transaction:
 | `gateway` | `registered` | `<property>/<gateway>` |
 | `device` | `registered`, `changed`, `retired` | `<property>/<device>` |
 | `room_type` | `created`, `changed` | `<property>/<room type>` |
-| `room` | `created` | `<property>/<room>` |
+| `room` | `created`, `mode_changed` | `<property>/<room>` |
 
 SB0 records events only. A worker delivering them (webhooks, the Hotel OS) arrives with SB3.
 
@@ -96,3 +96,17 @@ gateway (edge/)                                    control plane (/edge/v1, gate
 - Commands exist only for controllable devices; the gateway refuses others again (ADR-0003).
 - Gateway status: `provisioned` before the first heartbeat, then `online` / `offline` (no contact for
   two minutes).
+
+## Hotel OS coupling (SB3, ADR-0007)
+
+```
+Hotel OS (pms-clone)                         Smart Building
+  webhook Reservation ──── ?token= ─────▶   sync property: read InHouse + arrivals today
+  GET /api/reservations ◀─── service user    → room occupancy (vacant / arriving / occupied)
+                                             → mode (eco / preheat / comfort) → set point on change
+  inbox ──── X-Api-Key ─────────────────▶   GET /api/integrations/hotel-os/v1/faults
+```
+
+A mode change emits `room/mode_changed` and writes the mode's set point (a command behind a
+gateway). Faults: occupied or arriving room 2 K below its set point (`Today`), gateway offline
+(`Today`), device fault (`Attention`).

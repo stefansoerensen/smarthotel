@@ -14,6 +14,9 @@ const room: Room = {
   floor: "1",
   room_type_code: "STD",
   gateway_code: null,
+  occupancy: null,
+  mode: null,
+  reservation_code: null,
   points: [
     point("temperature", 20.4, false, "°C"),
     point("setpoint", 21, true, "°C"),
@@ -31,7 +34,7 @@ describe("RoomTile", () => {
     expect(screen.getByText("20,4 °C")).toBeInTheDocument();
     expect(screen.getByText("Soll 21,0 °C")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Fenster offen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "frei" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "abwesend" })).toBeInTheDocument();
     expect(screen.getByText("Ventil 0 %")).toBeInTheDocument();
     expect(screen.getByText("1,23 kWh")).toBeInTheDocument();
   });
@@ -48,7 +51,7 @@ describe("RoomTile", () => {
     render(<RoomTile room={room} onSetpoint={vi.fn()} onSimulate={onSimulate} />);
     await userEvent.click(screen.getByRole("button", { name: "Fenster offen" }));
     expect(onSimulate).toHaveBeenCalledWith({ window: false });
-    await userEvent.click(screen.getByRole("button", { name: "frei" }));
+    await userEvent.click(screen.getByRole("button", { name: "abwesend" }));
     expect(onSimulate).toHaveBeenCalledWith({ presence: true });
   });
 
@@ -64,5 +67,16 @@ describe("RoomTile", () => {
     expect(screen.getByText("Fenster offen")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Fenster offen" })).not.toBeInTheDocument();
     expect(screen.getByText("GW-01")).toBeInTheDocument();
+  });
+
+  it("shows occupancy and mode from the Hotel OS", () => {
+    render(
+      <RoomTile
+        room={{ ...room, occupancy: "arriving", mode: "preheat", reservation_code: "R1" }}
+        onSetpoint={vi.fn()}
+        onSimulate={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Anreise heute · Vorheizen")).toBeInTheDocument();
   });
 });

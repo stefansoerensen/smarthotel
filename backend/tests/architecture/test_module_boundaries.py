@@ -4,13 +4,14 @@ import ast
 from pathlib import Path
 
 APP = Path(__file__).resolve().parents[2] / "app"
-MODULES = {"platform", "estate", "devices", "twin", "edge"}
+MODULES = {"platform", "estate", "devices", "twin", "edge", "integration"}
 ALLOWED: dict[str, set[str]] = {
     "platform": set(),
     "estate": {"platform"},
     "devices": {"estate", "platform"},
     "twin": {"devices", "estate", "platform"},
     "edge": {"twin", "devices", "estate", "platform"},
+    "integration": {"edge", "twin", "devices", "estate", "platform"},
 }
 
 

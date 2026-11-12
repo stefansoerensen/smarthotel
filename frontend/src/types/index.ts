@@ -179,10 +179,43 @@ export interface Room {
   floor: string | null;
   room_type_code: string | null;
   gateway_code: string | null;
+  occupancy: "vacant" | "arriving" | "occupied" | null;
+  mode: "eco" | "preheat" | "comfort" | null;
+  reservation_code: string | null;
   points: RoomPoint[];
 }
 
 export interface SimulatorRoomInput {
   window?: boolean;
   presence?: boolean;
+}
+
+export interface HotelOsLink {
+  hotel_os_property_code: string | null;
+  enabled: boolean;
+  comfort_setpoint: number;
+  eco_setpoint: number;
+  last_sync_at: string | null;
+  last_sync_error: string | null;
+  configured: boolean;
+}
+
+export interface HotelOsLinkInput {
+  hotel_os_property_code: string;
+  enabled: boolean;
+  comfort_setpoint: number;
+  eco_setpoint: number;
+}
+
+export interface SyncResult {
+  rooms_changed: number;
+  unmatched_units: string[];
+}
+
+export interface Fault {
+  kind: string;
+  severity: "Blocker" | "Today" | "Attention";
+  message: string;
+  unit_name: string | null;
+  since: string | null;
 }

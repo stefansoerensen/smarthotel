@@ -325,3 +325,49 @@ async def simulate_step(
         simulated += 1
     await session.flush()
     return simulated
+
+
+MODES = ("eco", "preheat", "comfort")
+OCCUPANCIES = ("vacant", "arriving", "occupied")
+
+
+async def apply_mode(
+    session: AsyncSession,
+    prop: Property,
+    room: Room,
+    *,
+    occupancy: str,
+    mode: str,
+    reservation_code: str | None,
+    setpoint: float,
+    now: datetime,
+) -> tuple[bool, RoomPoint | None, bool]:
+    """Set a room's occupancy and mode; on a mode change write the mode's set point.
+
+    Returns (mode changed, set point written, whether that point sits behind a gateway). The set
+    point is written only on a change, so a guest's own adjustment stays until the next change.
+    """
+    room.occupancy = occupancy
+    room.reservation_code = reservation_code
+    if room.mode == mode:
+        await session.flush()
+        return False, None, False
+    previous = room.mode
+    room.mode = mode
+    room.mode_since = now
+    await events.emit(
+        session,
+        topic="room",
+        event_type="mode_changed",
+        entity_code=_entity(prop, room.code),
+        property_code=prop.code,
+        payload={"from": previous, "to": mode, "occupancy": occupancy},
+    )
+    points = {p.key: p for p in (await points_of(session, [room.id]))[room.id]}
+    if "setpoint" not in points:
+        await session.flush()
+        return True, None, False
+    point, behind_gateway = await write_point(
+        session, room, "setpoint", setpoint, now=now, source="hotel_os"
+    )
+    return True, point, behind_gateway

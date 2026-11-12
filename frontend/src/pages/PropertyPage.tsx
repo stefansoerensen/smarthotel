@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import DeviceRegistry from "../components/DeviceRegistry";
 import GatewaysPanel from "../components/GatewaysPanel";
+import HotelOsTab from "../components/HotelOsTab";
 import Field, { buttonClass, inputClass } from "../components/Field";
 import RoomTypesTab from "../components/RoomTypesTab";
 import RoomsTab from "../components/RoomsTab";
@@ -15,6 +16,7 @@ const TABS = [
   { id: "zimmer", label: "Zimmer" },
   { id: "raumtypen", label: "Raumtypen" },
   { id: "geraete", label: "Geräte" },
+  { id: "hotel-os", label: "Hotel OS" },
 ] as const;
 
 export default function PropertyPage() {
@@ -154,6 +156,7 @@ export default function PropertyPage() {
           <DeviceRegistry propertyCode={code} catalogue={catalogue} />
         </>
       )}
+      {tab === "hotel-os" && <HotelOsTab propertyCode={code} />}
       {error && (
         <p role="alert" className="text-burgundy">
           {error}

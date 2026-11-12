@@ -9,11 +9,11 @@ property and two devices registered, the smoke detector shown as read only.**
 |---|---|---|
 | SB0 — Foundation | 7 / 7 | Done and verified on the deployed app. |
 | SB1 — Device model, templates, twin, room simulator | 4 / 5 | Green in CI, deployed. Rollout on Railway still to be done once by Stefan. |
-| SB2 — Edge gateway against the simulator | 3 / 4 | Pushed; CI not read yet. |
-| SB3 — Coupling with the Hotel OS | 0 | Open |
+| SB2 — Edge gateway against the simulator | 3 / 4 | Green in CI (43c9ac0), deployed. No gateway container runs yet. |
+| SB3 — Coupling with the Hotel OS | 4 / 5 | Pushed; CI not read yet. pms-clone side open (hub). |
 | SB4 — Energy | 0 | Open |
 
-Counts: 37 endpoints · 11 tables · 55 backend tests (+2 migration) · 14 edge tests · 43 frontend tests.
+Counts: 43 endpoints · 12 tables · 63 backend tests (+2 migration) · 14 edge tests · 47 frontend tests.
 
 ## 2. Features
 
@@ -38,9 +38,13 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Rollout, rooms, twin points, point writes | Twin | Done | SB1·2 | CI green (b69fa6b). |
 | Room simulator | Twin | Done | SB1·3 | CI green (b69fa6b). |
 | Frontend: Haus tabs Zimmer / Raumtypen / Geräte, rollout, room tiles, simulator | Frontend | Done | SB1·4 | CI green (710d84d), deployed; endpoints and UI seen on Railway (read only, nothing created by the agent). |
-| Edge API: tokens, hello, readings, heartbeat, commands, ack | Edge | In progress | SB2·1 | Pushed; CI not read yet. |
-| Edge gateway container (rules, buffer, commands, simulated bus) | Edge | In progress | SB2·2 | Pushed; CI not read yet. Not running anywhere yet. |
-| Frontend: gateways, tokens, device health, pending set points, rollout behind a gateway | Frontend | In progress | SB2·3 | Pushed; CI not read yet. |
+| Edge API: tokens, hello, readings, heartbeat, commands, ack | Edge | Done | SB2·1 | CI green (43c9ac0). |
+| Edge gateway container (rules, buffer, commands, simulated bus) | Edge | Done | SB2·2 | CI green (43c9ac0). Not running anywhere yet. |
+| Frontend: gateways, tokens, device health, pending set points, rollout behind a gateway | Frontend | Done | SB2·3 | CI green (43c9ac0). |
+| Hotel OS link, occupancy sync, room modes and set points | Integration | In progress | SB3·1 | Pushed; CI not read yet. Needs Railway variables and a pms-clone service user. |
+| Hotel OS webhook | Integration | In progress | SB3·2 | Pushed; CI not read yet. |
+| Faults for the Hotel OS inbox | Integration | In progress | SB3·3 | Pushed; CI not read yet. pms-clone does not read it yet. |
+| Frontend: Hotel OS tab, occupancy on room tiles | Frontend | In progress | SB3·4 | Pushed; CI not read yet. |
 | Frontend: Mandant anlegen (admin) | Frontend | Done | SB0·6 | CI run 43259030276 green; 6d9d6fa deployed, form shown to the admin there. Not yet submitted. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
@@ -79,3 +83,5 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
   simulator +15 min / +1 h with outdoor temperature. Catalogue kinds now carry `writable`.
 - 2026-11-12 — SB2: edge API, gateway container, frontend for gateways; migration 0003 with a
   server default for device health so existing devices on Railway migrate.
+- 2026-11-12 — SB3: Hotel OS link, occupancy sync, webhook, faults endpoint, Hotel OS tab;
+  ADR-0007 and `contracts/hotel-os-v1/`. Presence toggle relabelled anwesend/abwesend.

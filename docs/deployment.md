@@ -99,3 +99,20 @@ The edge gateway is a second image (`edge/Dockerfile`). To watch a property run 
 4. The gateway appears as "online" within one tick; readings arrive in the Zimmer tab.
 
 Without a volume the buffer is lost on redeploy — acceptable for the simulator, not for a hotel.
+
+## Hotel OS coupling (ADR-0007)
+
+Variables on the `app` service:
+
+| Variable | Value |
+|---|---|
+| `HOTEL_OS_URL` | Public URL of the pms-clone app |
+| `HOTEL_OS_USERNAME`, `HOTEL_OS_PASSWORD` | A service user in pms-clone that may read properties and reservations |
+| `HOTEL_OS_WEBHOOK_TOKEN` | A fresh random string (`openssl rand -hex 24`) |
+| `HOTEL_OS_INBOX_KEY` | Another fresh random string; pms-clone sends it as `X-Api-Key` |
+
+In pms-clone: a webhook subscription to
+`https://<smarthotel app>/api/integrations/hotel-os/webhook?token=<HOTEL_OS_WEBHOOK_TOKEN>` with topic
+`Reservation`, and the inbox source calling
+`https://<smarthotel app>/api/integrations/hotel-os/v1/faults?property_code=<code>` with the key.
+In Smart Building: Haus → Hotel OS → Hauscode of the pms-clone property → Speichern → Jetzt abgleichen.

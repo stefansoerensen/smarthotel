@@ -96,6 +96,9 @@ class RoomOut(BaseModel):
     floor: str | None
     room_type_code: str | None
     gateway_code: str | None
+    occupancy: str | None
+    mode: str | None
+    reservation_code: str | None
     points: list[RoomPointOut]
 
 

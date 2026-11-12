@@ -3,5 +3,6 @@
 from app.models.devices import device, gateway  # noqa: F401
 from app.models.edge import command  # noqa: F401
 from app.models.estate import property  # noqa: F401
+from app.models.integration import hotel_os_link  # noqa: F401
 from app.models.platform import outbox_event, tenant, user  # noqa: F401
 from app.models.twin import room, room_type  # noqa: F401

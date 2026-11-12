@@ -26,6 +26,11 @@ class Room(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     floor: Mapped[str | None] = mapped_column(String(20), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    # From the Hotel OS (ADR-0007): vacant, arriving or occupied; mode eco, preheat or comfort.
+    occupancy: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    mode: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    mode_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reservation_code: Mapped[str | None] = mapped_column(String(60), nullable=True)
 
 
 class RoomPoint(TimestampMixin, Base):

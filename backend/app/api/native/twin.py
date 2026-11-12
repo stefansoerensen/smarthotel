@@ -64,6 +64,9 @@ async def _rooms_out(db: AsyncSession, prop: Property, items: list[Room]) -> lis
             floor=r.floor,
             room_type_code=type_codes.get(r.room_type_id) if r.room_type_id else None,
             gateway_code=gateways.get(r.id),
+            occupancy=r.occupancy,
+            mode=r.mode,
+            reservation_code=r.reservation_code,
             points=[
                 RoomPointOut(
                     key=p.key,

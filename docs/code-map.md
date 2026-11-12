@@ -34,6 +34,12 @@
 | `models/edge/command.py`, `services/edge/commands.py` | Commands: create, hand out, acknowledge |
 | `api/edge/v1.py`, `schemas/edge.py` | Edge protocol v1 for gateways |
 | `api/native/commands.py` | Commands of a property for operators |
+| `alembic/versions/0004_sb3_hotel_os.py` | `hotel_os_links`; room occupancy and mode |
+| `models/integration/hotel_os_link.py` | Link to the Hotel OS property, set points per mode |
+| `services/integration/hotel_os.py` | `Stay`, `HttpHotelOs` client of the Hotel OS native API |
+| `services/integration/occupancy.py` | Link, occupancy by unit, sync → room modes and set points |
+| `services/integration/faults.py` | Faults for the inbox |
+| `api/native/hotel_os.py` | Link, sync, faults, webhook, inbox endpoint |
 | `seed/bootstrap.py` | Pre-deploy: administrator from env, dev users outside production |
 | `alembic/versions/0001_sb0_foundation.py` | All SB0 tables |
 
@@ -72,12 +78,17 @@
 | GET | `/properties/{code}/commands` | signed in (scoped) |
 | POST | `/edge/v1/hello`, `/readings`, `/heartbeat` | gateway token |
 | GET | `/edge/v1/commands` | gateway token; hands out pending commands once |
+| GET, PUT | `/properties/{code}/hotel-os` | signed in (scoped) |
+| POST | `/properties/{code}/hotel-os/sync` | signed in (scoped) |
+| GET | `/properties/{code}/faults` | signed in (scoped) |
+| POST | `/integrations/hotel-os/webhook?token=` | Hotel OS, shared secret |
+| GET | `/integrations/hotel-os/v1/faults?property_code=` | Hotel OS inbox, `X-Api-Key` |
 | POST | `/edge/v1/commands/{id}/ack` | gateway token |
 
 ## Tables (schema `smarthotel`)
 
 `users`, `tenants`, `outbox_events`, `properties`, `gateways` (unique property+code),
-`devices` (unique property+code), `room_types`, `room_type_points`, `rooms`, `room_points`, `commands`.
+`devices` (unique property+code), `room_types`, `room_type_points`, `rooms`, `room_points`, `commands`, `hotel_os_links`.
 
 ## Frontend (`frontend/src/`)
 
@@ -96,6 +107,7 @@
 | `services/twin.ts` | Room types, rooms, rollout, simulator calls |
 | `utils/rooms.ts` | `parseRoomCodes` for "101-120, 201" |
 | `components/GatewaysPanel.tsx` | Gateways: status, register, token shown once |
+| `components/HotelOsTab.tsx`, `services/hotelOs.ts` | Hotel OS tab: link, sync, faults |
 
 ## Edge (`edge/edge_gateway/`)
 

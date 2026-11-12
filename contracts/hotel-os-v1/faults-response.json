@@ -1,0 +1,8 @@
+{
+  "property_code": "HAM",
+  "items": [
+    {"kind": "RoomTooCold", "severity": "Today", "message": "Zimmer 101 zu kalt: 17,8 °C, Soll 21,0 °C", "unit_name": "101", "since": "2026-11-12T08:00:00+00:00"},
+    {"kind": "GatewayOffline", "severity": "Today", "message": "Gateway GW-01 seit 08:00 nicht erreichbar", "unit_name": null, "since": "2026-11-12T08:00:00+00:00"},
+    {"kind": "DeviceFault", "severity": "Attention", "message": "Gerät 102-VALVE meldet eine Störung", "unit_name": "102", "since": "2026-11-12T08:00:00+00:00"}
+  ]
+}

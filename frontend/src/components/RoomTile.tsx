@@ -20,6 +20,17 @@ function has(room: Room, key: string): boolean {
 
 const chip = "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs";
 
+const OCCUPANCY: Record<NonNullable<Room["occupancy"]>, string> = {
+  occupied: "Gast im Haus",
+  arriving: "Anreise heute",
+  vacant: "frei",
+};
+const MODE: Record<NonNullable<Room["mode"]>, string> = {
+  comfort: "Komfort",
+  preheat: "Vorheizen",
+  eco: "Eco",
+};
+
 /** One room of the twin: temperature, set point, window, presence, valve, heat meter. */
 export default function RoomTile({ room, onSetpoint, onSimulate }: RoomTileProps) {
   const temperature = valueOf(room, "temperature");
@@ -42,6 +53,12 @@ export default function RoomTile({ room, onSetpoint, onSimulate }: RoomTileProps
           {edge && <span className="ml-1 rounded bg-ink/10 px-1">{room.gateway_code}</span>}
         </span>
       </header>
+      {room.occupancy && (
+        <p className={`w-fit rounded px-1.5 text-xs ${room.occupancy === "vacant" ? "bg-bone text-ink/60" : "bg-burgundy-light text-burgundy"}`}>
+          {OCCUPANCY[room.occupancy]}
+          {room.mode ? ` · ${MODE[room.mode]}` : ""}
+        </p>
+      )}
       {has(room, "temperature") && (
         <p className={`text-2xl font-semibold ${cold ? "text-burgundy" : ""}`}>
           {temperature === null ? "–" : `${de1.format(temperature)} °C`}
@@ -89,7 +106,7 @@ export default function RoomTile({ room, onSetpoint, onSimulate }: RoomTileProps
         {has(room, "presence") && edge && (
           <span className={`${chip} ${present ? "bg-ink text-white" : "bg-bone"}`}>
             <User size={12} aria-hidden />
-            {present ? "belegt" : "frei"}
+            {present ? "anwesend" : "abwesend"}
           </span>
         )}
         {has(room, "presence") && !edge && (
@@ -99,7 +116,7 @@ export default function RoomTile({ room, onSetpoint, onSimulate }: RoomTileProps
             onClick={() => void onSimulate({ presence: !present }).catch(() => undefined)}
           >
             <User size={12} aria-hidden />
-            {present ? "belegt" : "frei"}
+            {present ? "anwesend" : "abwesend"}
           </button>
         )}
       </div>

@@ -68,6 +68,12 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str = ""
     static_dir: str = "static"
+    # Coupling with the Hotel OS (ADR-0007); empty values switch the parts off.
+    hotel_os_url: str = ""
+    hotel_os_username: str = ""
+    hotel_os_password: str = ""
+    hotel_os_webhook_token: str = ""
+    hotel_os_inbox_key: str = ""
 
     @field_validator("database_url", mode="after")
     @classmethod
