@@ -1,0 +1,8 @@
+{
+  "gateway_code": "GW-01",
+  "property_code": "DEMO",
+  "devices": [
+    {"code": "101-TEMPERATURE", "kind": "temperature_sensor", "protocol": "simulator", "address": null, "controllable": false, "room_code": "101", "point_key": "temperature"},
+    {"code": "101-SETPOINT", "kind": "thermostat", "protocol": "simulator", "address": null, "controllable": true, "room_code": "101", "point_key": "setpoint"}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "sent_at": "2026-11-12T08:05:00+00:00",
+  "buffered": 0,
+  "health": [
+    {"device_code": "101-TEMPERATURE", "ok": true},
+    {"device_code": "101-SETPOINT", "ok": true}
+  ]
+}
