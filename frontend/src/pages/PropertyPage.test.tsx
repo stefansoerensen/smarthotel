@@ -68,7 +68,7 @@ describe("PropertyPage", () => {
     await userEvent.type(screen.getByLabelText("Code"), "102-V");
     await userEvent.type(screen.getByLabelText("Name"), "Heizventil 102");
     await userEvent.type(screen.getByLabelText("Ort"), "102");
-    await userEvent.type(screen.getByLabelText("Adresse"), "1/2/4");
+    await userEvent.type(screen.getByLabelText("Busadresse (optional)"), "1/2/4");
     await userEvent.click(screen.getByRole("button", { name: "Gerät anlegen" }));
     expect(register).toHaveBeenCalledWith("HAM1", {
       code: "102-V",
@@ -90,5 +90,38 @@ describe("PropertyPage", () => {
     await userEvent.type(screen.getByLabelText("Name"), "Heizventil 101 Bad");
     await userEvent.click(screen.getByRole("button", { name: "Gerät anlegen" }));
     expect(register).toHaveBeenCalledWith("HAM1", expect.objectContaining({ code: "101-VALVE" }));
+  });
+
+  it("suggests the device name from kind and location", async () => {
+    const register = vi.spyOn(devices, "registerDevice").mockResolvedValue(valve);
+    renderPage();
+    await screen.findByText("Heizventil 101");
+    await userEvent.type(screen.getByLabelText("Ort"), "102");
+    expect(screen.getByLabelText("Name")).toHaveValue("Heizventil 102");
+    await userEvent.click(screen.getByRole("button", { name: "Gerät anlegen" }));
+    expect(register).toHaveBeenCalledWith("HAM1", {
+      code: "102-VALVE",
+      name: "Heizventil 102",
+      kind: "valve",
+      protocol: "knx",
+      location: "102",
+      address: undefined,
+    });
+  });
+
+  it("keeps a name the user typed", async () => {
+    renderPage();
+    await screen.findByText("Heizventil 101");
+    await userEvent.type(screen.getByLabelText("Name"), "Ventil Bad");
+    await userEvent.type(screen.getByLabelText("Ort"), "103");
+    expect(screen.getByLabelText("Name")).toHaveValue("Ventil Bad");
+  });
+
+  it("shows the bus address format of the chosen protocol", async () => {
+    renderPage();
+    await screen.findByText("Heizventil 101");
+    expect(screen.getByLabelText("Busadresse (optional)")).toHaveAttribute("placeholder", "KNX-Gruppenadresse, z. B. 1/2/3");
+    await userEvent.selectOptions(screen.getByLabelText("Protokoll"), "bacnet");
+    expect(screen.getByLabelText("Busadresse (optional)")).toHaveAttribute("placeholder", "Geräte-ID:Objekt, z. B. 1001:analog-input,3");
   });
 });

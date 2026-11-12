@@ -14,7 +14,7 @@ still have to be used once on the deployed app.**
 | SB3 — Coupling with the Hotel OS | 0 | Open |
 | SB4 — Energy | 0 | Open |
 
-Counts: 18 endpoints · 6 tables · 29 backend tests (+1 migration drift) · 20 frontend tests.
+Counts: 18 endpoints · 6 tables · 29 backend tests (+1 migration drift) · 23 frontend tests.
 
 ## 2. Features
 
@@ -33,6 +33,7 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Safety devices read only | Devices | Done | SB0·5 | ADR-0003. |
 | Frontend: login, Häuser, Geräteregister | Frontend | Done | SB0·6 | |
 | Frontend: code suggestions for Mandant, Haus, Gerät | Frontend | Verified | SB0·6 | CI run 43260549510 green; 7cd6a54 deployed; tenant suggestion seen there (not submitted). |
+| Frontend: device form — name suggested from Art + Ort, Busadresse optional with protocol hint | Frontend | In progress | SB0·6 | Pushed; CI and deployed app not checked yet. |
 | Frontend: Mandant anlegen (admin) | Frontend | Done | SB0·6 | CI run 43259030276 green; 6d9d6fa deployed, form shown to the admin there. Not yet submitted. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
@@ -52,3 +53,6 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
   once a tenant exists.
 - 2026-11-12 — Frontend: codes are suggested from the name (Mandant, Haus) or from location and
   kind (Gerät), umlauts spelled out, `-2`, `-3` … against codes already listed; editable.
+- 2026-11-12 — Frontend: device form reordered (Art, Ort, Protokoll, then Name, Code, Busadresse);
+  name suggested as "<Art> <Ort>"; "Adresse" renamed "Busadresse (optional)" with a format hint
+  per protocol.

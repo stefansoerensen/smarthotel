@@ -8,10 +8,27 @@ import { getProperty } from "../services/estate";
 import type { ApiError, Catalogue, Device, Property } from "../types";
 import { suggestDeviceCode } from "../utils/codes";
 
-// ``code`` is null while it follows the suggestion and holds the user's text once they edit it.
-const EMPTY: { code: string | null; name: string; kind: string; protocol: string; location: string; address: string } = {
+// ``code`` and ``name`` are null while they follow the suggestion and hold the user's text once
+// they edit them.
+const ADDRESS_HINTS: Record<string, string> = {
+  knx: "KNX-Gruppenadresse, z. B. 1/2/3",
+  bacnet: "Geräte-ID:Objekt, z. B. 1001:analog-input,3",
+  modbus: "Unit/Register, z. B. 1/40001",
+  mqtt: "Topic, z. B. haus/101/temperatur",
+  simulator: "leer lassen",
+  vendor_api: "Kennung beim Hersteller",
+};
+
+const EMPTY: {
+  code: string | null;
+  name: string | null;
+  kind: string;
+  protocol: string;
+  location: string;
+  address: string;
+} = {
   code: null,
-  name: "",
+  name: null,
   kind: "",
   protocol: "",
   location: "",
@@ -49,15 +66,17 @@ export default function PropertyPage() {
     loadDevices().catch((err: ApiError) => setError(err.message));
   }, [loadDevices]);
 
+  const labelOf = (kind: string) => catalogue?.kinds.find((k) => k.kind === kind)?.label ?? kind;
+  const deviceName =
+    form.name ?? (form.location.trim() ? `${labelOf(form.kind)} ${form.location.trim()}` : "");
   const deviceCode =
     form.code ??
     suggestDeviceCode({
       location: form.location,
       kind: form.kind,
-      name: form.name,
+      name: deviceName,
       taken: devices.map((d) => d.code),
     });
-  const labelOf = (kind: string) => catalogue?.kinds.find((k) => k.kind === kind)?.label ?? kind;
   const selectedIsSafety = catalogue?.kinds.find((k) => k.kind === form.kind)?.safety ?? false;
 
   async function submit(event: FormEvent) {
@@ -66,7 +85,7 @@ export default function PropertyPage() {
     try {
       await registerDevice(code, {
         code: deviceCode,
-        name: form.name,
+        name: deviceName,
         kind: form.kind,
         protocol: form.protocol,
         location: form.location || undefined,
@@ -112,7 +131,7 @@ export default function PropertyPage() {
             <th className="p-2">Name</th>
             <th className="p-2">Art</th>
             <th className="p-2">Protokoll</th>
-            <th className="p-2">Adresse</th>
+            <th className="p-2">Busadresse</th>
             <th className="p-2">Steuerung</th>
           </tr>
         </thead>
@@ -149,13 +168,7 @@ export default function PropertyPage() {
         </tbody>
       </table>
 
-      <form onSubmit={submit} className="grid grid-cols-4 items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <Field label="Code">
-          <input className={inputClass} value={deviceCode} onChange={(e) => setForm({ ...form, code: e.target.value || null })} />
-        </Field>
-        <Field label="Name">
-          <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        </Field>
+      <form onSubmit={submit} className="grid grid-cols-3 items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
         <Field label="Art">
           <select className={inputClass} value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
             {catalogue?.kinds.map((k) => (
@@ -164,6 +177,14 @@ export default function PropertyPage() {
               </option>
             ))}
           </select>
+        </Field>
+        <Field label="Ort">
+          <input
+            className={inputClass}
+            value={form.location}
+            placeholder="Zimmer oder Bereich, z. B. 101"
+            onChange={(e) => setForm({ ...form, location: e.target.value })}
+          />
         </Field>
         <Field label="Protokoll">
           <select className={inputClass} value={form.protocol} onChange={(e) => setForm({ ...form, protocol: e.target.value })}>
@@ -175,16 +196,24 @@ export default function PropertyPage() {
               ))}
           </select>
         </Field>
-        <Field label="Ort">
-          <input className={inputClass} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+        <Field label="Name">
+          <input className={inputClass} value={deviceName} onChange={(e) => setForm({ ...form, name: e.target.value || null })} />
         </Field>
-        <Field label="Adresse">
-          <input className={inputClass} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+        <Field label="Code">
+          <input className={inputClass} value={deviceCode} onChange={(e) => setForm({ ...form, code: e.target.value || null })} />
         </Field>
-        <p className="text-xs text-ink/60">
+        <Field label="Busadresse (optional)">
+          <input
+            className={inputClass}
+            value={form.address}
+            placeholder={ADDRESS_HINTS[form.protocol] ?? ""}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+          />
+        </Field>
+        <p className="col-span-2 text-xs text-ink/60">
           {selectedIsSafety ? "Sicherheitsgerät: wird nur gelesen, nie gesteuert." : ""}
         </p>
-        <button type="submit" className={buttonClass} disabled={!deviceCode || !form.name}>
+        <button type="submit" className={buttonClass} disabled={!deviceCode || !deviceName}>
           Gerät anlegen
         </button>
       </form>
