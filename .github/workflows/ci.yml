@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  # Lets CI be run against a ref on demand. Needed when a commit reaches the branch by a route
+  # that raises no push event -- a ref updated through the REST API, for instance, which is the
+  # fallback when git push itself is failing.
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  naming:
+    name: naming guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reference vendor name must not appear in this repository
+        env:
+          FORBIDDEN: ${{ vars.FORBIDDEN_VENDOR_NAME }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FORBIDDEN}" ]; then
+            echo "Repository variable FORBIDDEN_VENDOR_NAME is not set." >&2
+            echo "See docs/deployment.md, section 'Naming guard'." >&2
+            exit 1
+          fi
+          names="$(git ls-files | grep -i -e "${FORBIDDEN}" || true)"
+          bodies="$(git grep -I -i -l -e "${FORBIDDEN}" -- . || true)"
+          if [ -n "${names}" ] || [ -n "${bodies}" ]; then
+            echo "The reference vendor name must not appear anywhere in this repository." >&2
+            if [ -n "${names}" ]; then
+              echo "File names:" >&2
+              echo "${names}" >&2
+            fi
+            if [ -n "${bodies}" ]; then
+              echo "File contents:" >&2
+              echo "${bodies}" >&2
+            fi
+            exit 1
+          fi
+          echo "Clean: the name does not appear."
+
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sb_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/sb_test
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/sb_test
+      JWT_SECRET: ci-test-secret-not-for-production-0123456789
+      ENVIRONMENT: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+
+      - name: Check formatting
+        working-directory: backend
+        run: |
+          # --diff prints what the formatter would change: there is no local runtime, so the
+          # CI log is the only place to see it.
+          black --check --diff app tests
+          isort --check-only --diff app tests
+
+      - name: Tests
+        working-directory: backend
+        run: pytest -q
+
+      - name: Migration drift
+        working-directory: backend
+        run: pytest -m migrations -q
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Tests
+        working-directory: frontend
+        run: npm run test -- --run
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  image:
+    name: image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: smarthotel:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke the image
+        run: |
+          docker run --rm \
+            -e JWT_SECRET=ci-test-secret-not-for-production-0123456789 \
+            -e ENVIRONMENT=test \
+            smarthotel:ci \
+            sh -c 'test "$(id -un)" = app \
+              && test -f /app/static/index.html \
+              && test -f /app/alembic.ini \
+              && python -c "import app.main; print(app.main.app.title)"'
