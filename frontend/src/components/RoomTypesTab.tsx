@@ -1,8 +1,9 @@
 import { Plus, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { listGateways } from "../services/devices";
 import { addPoint, createRoomType, listRoomTypes, removePoint, rollout } from "../services/twin";
-import type { ApiError, Catalogue, RoomType } from "../types";
+import type { ApiError, Catalogue, Gateway, RoomType } from "../types";
 import { suggestCode } from "../utils/codes";
 import { parseRoomCodes } from "../utils/rooms";
 import Field, { buttonClass, inputClass } from "./Field";
@@ -78,10 +79,12 @@ export default function RoomTypesTab({ propertyCode, catalogue, onRolledOut }: R
     standard: true,
   });
   const [addingTo, setAddingTo] = useState<string | null>(null);
-  const [plan, setPlan] = useState({ type: "", rooms: "", floor: "" });
+  const [plan, setPlan] = useState({ type: "", rooms: "", floor: "", gateway: "" });
+  const [gateways, setGateways] = useState<Gateway[]>([]);
 
   const load = useCallback(async () => {
-    const page = await listRoomTypes(propertyCode);
+    const [page, gws] = await Promise.all([listRoomTypes(propertyCode), listGateways(propertyCode)]);
+    setGateways(gws.items);
     setTypes(page.items);
     setPlan((p) => ({ ...p, type: p.type || page.items[0]?.code || "" }));
   }, [propertyCode]);
@@ -126,6 +129,7 @@ export default function RoomTypesTab({ propertyCode, catalogue, onRolledOut }: R
         room_type_code: plan.type,
         room_codes: parsed.codes,
         floor: plan.floor.trim() || undefined,
+        ...(plan.gateway ? { gateway_code: plan.gateway } : {}),
       });
       const parts = [`${result.rooms_created} Zimmer angelegt, ${result.devices_created} Geräte registriert`];
       if (result.rooms_unchanged) {
@@ -216,7 +220,7 @@ export default function RoomTypesTab({ propertyCode, catalogue, onRolledOut }: R
       </form>
 
       {types.length > 0 && (
-        <form aria-label="Ausrollen" onSubmit={submitRollout} className="grid grid-cols-4 items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
+        <form aria-label="Ausrollen" onSubmit={submitRollout} className="grid grid-cols-5 items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
           <Field label="Raumtyp">
             <select className={inputClass} value={plan.type} onChange={(e) => setPlan({ ...plan, type: e.target.value })}>
               {types.map((t) => (
@@ -232,10 +236,24 @@ export default function RoomTypesTab({ propertyCode, catalogue, onRolledOut }: R
           <Field label="Etage">
             <input className={inputClass} value={plan.floor} placeholder="optional" onChange={(e) => setPlan({ ...plan, floor: e.target.value })} />
           </Field>
+          {gateways.length > 0 ? (
+            <Field label="Gateway">
+              <select className={inputClass} value={plan.gateway} onChange={(e) => setPlan({ ...plan, gateway: e.target.value })}>
+                <option value="">ohne (Cloud-Simulator)</option>
+                {gateways.map((g) => (
+                  <option key={g.code} value={g.code}>
+                    {g.code} – {g.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : (
+            <span />
+          )}
           <button type="submit" className={buttonClass} disabled={!plan.type || parsed.codes.length === 0 || parsed.error !== null}>
             Ausrollen
           </button>
-          <p className="col-span-4 text-xs text-ink/60">
+          <p className="col-span-5 text-xs text-ink/60">
             {parsed.error ?? (parsed.codes.length ? `${parsed.codes.length} Zimmer` : "Zimmer als Liste oder Bereiche, z. B. 101-120, 201-210")}
           </p>
         </form>

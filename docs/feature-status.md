@@ -8,12 +8,12 @@ property and two devices registered, the smoke detector shown as read only.**
 | Stage | Tasks done / total | State |
 |---|---|---|
 | SB0 — Foundation | 7 / 7 | Done and verified on the deployed app. |
-| SB1 — Device model, templates, twin, room simulator | 4 / 5 | Backend green in CI (b69fa6b); frontend pushed. |
-| SB2 — Edge gateway against the simulator | 0 | Open |
+| SB1 — Device model, templates, twin, room simulator | 4 / 5 | Green in CI, deployed. Rollout on Railway still to be done once by Stefan. |
+| SB2 — Edge gateway against the simulator | 3 / 4 | Pushed; CI not read yet. |
 | SB3 — Coupling with the Hotel OS | 0 | Open |
 | SB4 — Energy | 0 | Open |
 
-Counts: 30 endpoints · 10 tables · 46 backend tests (+1 migration drift) · 37 frontend tests.
+Counts: 37 endpoints · 11 tables · 55 backend tests (+2 migration) · 14 edge tests · 43 frontend tests.
 
 ## 2. Features
 
@@ -37,7 +37,10 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Room types with standard points | Twin | Done | SB1·1 | CI green (b69fa6b). |
 | Rollout, rooms, twin points, point writes | Twin | Done | SB1·2 | CI green (b69fa6b). |
 | Room simulator | Twin | Done | SB1·3 | CI green (b69fa6b). |
-| Frontend: Haus tabs Zimmer / Raumtypen / Geräte, rollout, room tiles, simulator | Frontend | In progress | SB1·4 | Pushed; CI and deployed app not checked yet. |
+| Frontend: Haus tabs Zimmer / Raumtypen / Geräte, rollout, room tiles, simulator | Frontend | Done | SB1·4 | CI green (710d84d), deployed; endpoints and UI seen on Railway (read only, nothing created by the agent). |
+| Edge API: tokens, hello, readings, heartbeat, commands, ack | Edge | In progress | SB2·1 | Pushed; CI not read yet. |
+| Edge gateway container (rules, buffer, commands, simulated bus) | Edge | In progress | SB2·2 | Pushed; CI not read yet. Not running anywhere yet. |
+| Frontend: gateways, tokens, device health, pending set points, rollout behind a gateway | Frontend | In progress | SB2·3 | Pushed; CI not read yet. |
 | Frontend: Mandant anlegen (admin) | Frontend | Done | SB0·6 | CI run 43259030276 green; 6d9d6fa deployed, form shown to the admin there. Not yet submitted. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
@@ -74,3 +77,5 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 - 2026-11-12 — SB1 frontend: Haus page tabs; Raumtypen with points and rollout ("101-120, 201-210");
   Zimmer tiles with temperature, set point ±0.5, window and presence toggles, valve, heat meter;
   simulator +15 min / +1 h with outdoor temperature. Catalogue kinds now carry `writable`.
+- 2026-11-12 — SB2: edge API, gateway container, frontend for gateways; migration 0003 with a
+  server default for device health so existing devices on Railway migrate.

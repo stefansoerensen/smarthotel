@@ -23,7 +23,10 @@ const chip = "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs";
 /** One room of the twin: temperature, set point, window, presence, valve, heat meter. */
 export default function RoomTile({ room, onSetpoint, onSimulate }: RoomTileProps) {
   const temperature = valueOf(room, "temperature");
-  const setpoint = valueOf(room, "setpoint") ?? 21;
+  const setpointPoint = room.points.find((p) => p.key === "setpoint");
+  const pending = setpointPoint?.desired ?? null;
+  const setpoint = pending ?? valueOf(room, "setpoint") ?? 21;
+  const edge = room.gateway_code !== null;
   const windowOpen = (valueOf(room, "window") ?? 0) >= 0.5;
   const present = (valueOf(room, "presence") ?? 0) >= 0.5;
   const valve = valueOf(room, "valve");
@@ -34,7 +37,10 @@ export default function RoomTile({ room, onSetpoint, onSimulate }: RoomTileProps
     <article aria-label={`Zimmer ${room.code}`} className="flex flex-col gap-2 rounded-lg bg-white p-3 shadow-sm">
       <header className="flex items-baseline justify-between">
         <span className="font-semibold">{room.code}</span>
-        <span className="text-xs text-ink/50">{room.room_type_code ?? ""}</span>
+        <span className="text-xs text-ink/50">
+          {room.room_type_code ?? ""}
+          {edge && <span className="ml-1 rounded bg-ink/10 px-1">{room.gateway_code}</span>}
+        </span>
       </header>
       {has(room, "temperature") && (
         <p className={`text-2xl font-semibold ${cold ? "text-burgundy" : ""}`}>
@@ -52,6 +58,7 @@ export default function RoomTile({ room, onSetpoint, onSimulate }: RoomTileProps
             <Minus size={12} aria-hidden />
           </button>
           <span>Soll {de1.format(setpoint)} °C</span>
+          {pending !== null && <span className="rounded bg-burgundy-light px-1 text-burgundy">ausstehend</span>}
           <button
             type="button"
             aria-label="Sollwert erhöhen"
@@ -63,7 +70,13 @@ export default function RoomTile({ room, onSetpoint, onSimulate }: RoomTileProps
         </div>
       )}
       <div className="flex flex-wrap gap-1">
-        {has(room, "window") && (
+        {has(room, "window") && edge && (
+          <span className={`${chip} ${windowOpen ? "bg-burgundy text-white" : "bg-bone"}`}>
+            <DoorOpen size={12} aria-hidden />
+            {windowOpen ? "Fenster offen" : "Fenster zu"}
+          </span>
+        )}
+        {has(room, "window") && !edge && (
           <button
             type="button"
             className={`${chip} ${windowOpen ? "bg-burgundy text-white" : "bg-bone"}`}
@@ -73,7 +86,13 @@ export default function RoomTile({ room, onSetpoint, onSimulate }: RoomTileProps
             {windowOpen ? "Fenster offen" : "Fenster zu"}
           </button>
         )}
-        {has(room, "presence") && (
+        {has(room, "presence") && edge && (
+          <span className={`${chip} ${present ? "bg-ink text-white" : "bg-bone"}`}>
+            <User size={12} aria-hidden />
+            {present ? "belegt" : "frei"}
+          </span>
+        )}
+        {has(room, "presence") && !edge && (
           <button
             type="button"
             className={`${chip} ${present ? "bg-ink text-white" : "bg-bone"}`}

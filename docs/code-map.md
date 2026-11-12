@@ -30,6 +30,10 @@
 | `services/twin/simulator.py` | Pure room simulator with a proportional controller |
 | `api/native/twin.py` | Room types, rooms, rollout, simulator endpoints |
 | `alembic/versions/0002_sb1_twin.py` | SB1 tables |
+| `alembic/versions/0003_sb2_edge.py` | `commands`; gateway token hash; device health; desired values |
+| `models/edge/command.py`, `services/edge/commands.py` | Commands: create, hand out, acknowledge |
+| `api/edge/v1.py`, `schemas/edge.py` | Edge protocol v1 for gateways |
+| `api/native/commands.py` | Commands of a property for operators |
 | `seed/bootstrap.py` | Pre-deploy: administrator from env, dev users outside production |
 | `alembic/versions/0001_sb0_foundation.py` | All SB0 tables |
 
@@ -63,12 +67,17 @@
 | GET | `/properties/{code}/rooms`, `/rooms/{room}` | signed in (scoped) |
 | PUT | `/properties/{code}/rooms/{room}/points/{key}` | signed in (scoped); writable points only |
 | POST | `/properties/{code}/simulator/step` | signed in (scoped) |
-| POST | `/properties/{code}/simulator/rooms/{room}` | signed in (scoped); window, presence |
+| POST | `/properties/{code}/simulator/rooms/{room}` | signed in (scoped); window, presence; not for edge rooms |
+| POST | `/properties/{code}/gateways/{gateway}/token` | signed in (scoped); new token, shown once |
+| GET | `/properties/{code}/commands` | signed in (scoped) |
+| POST | `/edge/v1/hello`, `/readings`, `/heartbeat` | gateway token |
+| GET | `/edge/v1/commands` | gateway token; hands out pending commands once |
+| POST | `/edge/v1/commands/{id}/ack` | gateway token |
 
 ## Tables (schema `smarthotel`)
 
 `users`, `tenants`, `outbox_events`, `properties`, `gateways` (unique property+code),
-`devices` (unique property+code), `room_types`, `room_type_points`, `rooms`, `room_points`.
+`devices` (unique property+code), `room_types`, `room_type_points`, `rooms`, `room_points`, `commands`.
 
 ## Frontend (`frontend/src/`)
 
@@ -86,6 +95,21 @@
 | `components/RoomsTab.tsx`, `components/RoomTile.tsx` | Zimmer tab: twin tiles and simulator |
 | `services/twin.ts` | Room types, rooms, rollout, simulator calls |
 | `utils/rooms.ts` | `parseRoomCodes` for "101-120, 201" |
+| `components/GatewaysPanel.tsx` | Gateways: status, register, token shown once |
+
+## Edge (`edge/edge_gateway/`)
+
+| Path | What |
+|---|---|
+| `config.py` | `EDGE_*` settings, scenario parsing |
+| `bus.py` | Bus interface, `SimulatedBus` (room physics, scenario, faulty devices) |
+| `rules.py` | Room controller, window open → heating off, frost protection |
+| `buffer.py` | SQLite reading queue and stored configuration |
+| `cloud.py` | `/edge/v1` client |
+| `gateway.py` | One tick: bus, rules, buffer, sync, commands |
+| `__main__.py` | `python -m edge_gateway` |
+
+Contract examples: `contracts/edge-v1/`.
 | `utils/codes.ts` | Code suggestions (`suggestCode`, `suggestDeviceCode`) |
 | `pages/LoginPage.tsx` | Anmeldung |
 | `pages/PropertiesPage.tsx` | Häuser; Mandant und Haus anlegen (admin) |

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import DeviceRegistry from "../components/DeviceRegistry";
+import GatewaysPanel from "../components/GatewaysPanel";
 import Field, { buttonClass, inputClass } from "../components/Field";
 import RoomTypesTab from "../components/RoomTypesTab";
 import RoomsTab from "../components/RoomsTab";
@@ -147,7 +148,12 @@ export default function PropertyPage() {
       {tab === "raumtypen" && (
         <RoomTypesTab propertyCode={code} catalogue={catalogue} />
       )}
-      {tab === "geraete" && <DeviceRegistry propertyCode={code} catalogue={catalogue} />}
+      {tab === "geraete" && (
+        <>
+          <GatewaysPanel propertyCode={code} />
+          <DeviceRegistry propertyCode={code} catalogue={catalogue} />
+        </>
+      )}
       {error && (
         <p role="alert" className="text-burgundy">
           {error}

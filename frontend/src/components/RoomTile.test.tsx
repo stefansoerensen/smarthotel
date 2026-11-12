@@ -5,7 +5,7 @@ import type { Room } from "../types";
 import RoomTile from "./RoomTile";
 
 function point(key: string, value: number | null, writable = false, unit: string | null = null) {
-  return { key, label: key, kind: key, unit, writable, device_code: null, value, value_at: null, source: null };
+  return { key, label: key, kind: key, unit, writable, device_code: null, value, value_at: null, source: null, desired: null, desired_at: null };
 }
 
 const room: Room = {
@@ -13,6 +13,7 @@ const room: Room = {
   name: "Zimmer 101",
   floor: "1",
   room_type_code: "STD",
+  gateway_code: null,
   points: [
     point("temperature", 20.4, false, "°C"),
     point("setpoint", 21, true, "°C"),
@@ -49,5 +50,19 @@ describe("RoomTile", () => {
     expect(onSimulate).toHaveBeenCalledWith({ window: false });
     await userEvent.click(screen.getByRole("button", { name: "frei" }));
     expect(onSimulate).toHaveBeenCalledWith({ presence: true });
+  });
+
+  it("shows a set point that waits for the gateway and hides simulator toggles of edge rooms", () => {
+    const edgeRoom: Room = {
+      ...room,
+      gateway_code: "GW-01",
+      points: room.points.map((p) => (p.key === "setpoint" ? { ...p, desired: 22 } : p)),
+    };
+    render(<RoomTile room={edgeRoom} onSetpoint={vi.fn()} onSimulate={vi.fn()} />);
+    expect(screen.getByText("Soll 22,0 °C")).toBeInTheDocument();
+    expect(screen.getByText("ausstehend")).toBeInTheDocument();
+    expect(screen.getByText("Fenster offen")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Fenster offen" })).not.toBeInTheDocument();
+    expect(screen.getByText("GW-01")).toBeInTheDocument();
   });
 });

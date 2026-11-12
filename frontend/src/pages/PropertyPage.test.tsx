@@ -19,6 +19,8 @@ const valve: Device = {
   controllable: true,
   safety: false,
   status: "active",
+  health: "ok",
+  last_seen_at: null,
 };
 const smoke: Device = { ...valve, code: "101-S", name: "Rauchmelder 101", kind: "smoke_detector", controllable: false, safety: true };
 
@@ -52,6 +54,7 @@ describe("PropertyPage", () => {
       protocols: { knx: "KNX/IP", bacnet: "BACnet/IP" },
     });
     vi.spyOn(devices, "listDevices").mockResolvedValue({ items: [valve, smoke], total: 2 });
+    vi.spyOn(devices, "listGateways").mockResolvedValue({ items: [], total: 0 });
   });
 
   it("lists the registry and marks safety devices read only", async () => {
@@ -66,10 +69,11 @@ describe("PropertyPage", () => {
     const register = vi.spyOn(devices, "registerDevice").mockResolvedValue(valve);
     renderPage();
     await screen.findByText("Heizventil 101");
-    await userEvent.type(screen.getByLabelText("Ort"), "102");
-    expect(screen.getByText("Heizventil 102")).toBeInTheDocument();
-    expect(screen.getByLabelText("Code")).toHaveValue("102-VALVE");
-    await userEvent.click(screen.getByRole("button", { name: "Gerät anlegen" }));
+    const form = screen.getByRole("form", { name: "Gerät anlegen" });
+    await userEvent.type(within(form).getByLabelText("Ort"), "102");
+    expect(within(form).getByText("Heizventil 102")).toBeInTheDocument();
+    expect(within(form).getByLabelText("Code")).toHaveValue("102-VALVE");
+    await userEvent.click(within(form).getByRole("button", { name: "Gerät anlegen" }));
     expect(register).toHaveBeenCalledWith("HAM1", {
       code: "102-VALVE",
       name: "Heizventil 102",
@@ -83,9 +87,10 @@ describe("PropertyPage", () => {
   it("asks for the location with a hint and no postal or bus address", async () => {
     renderPage();
     await screen.findByText("Heizventil 101");
-    expect(screen.getByLabelText("Ort")).toHaveAttribute("placeholder", "Zimmernummer, Flur o. ä.");
-    expect(screen.queryByLabelText(/adresse/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Name")).not.toBeInTheDocument();
+    const form = screen.getByRole("form", { name: "Gerät anlegen" });
+    expect(within(form).getByLabelText("Ort")).toHaveAttribute("placeholder", "Zimmernummer, Flur o. ä.");
+    expect(within(form).queryByLabelText(/adresse/i)).not.toBeInTheDocument();
+    expect(within(form).queryByLabelText("Name")).not.toBeInTheDocument();
   });
 
   it("needs a location before a device can be registered", async () => {
@@ -158,5 +163,12 @@ describe("PropertyPage", () => {
     renderPage();
     await screen.findByText("Heizventil 101");
     expect(screen.queryByRole("button", { name: "Haus bearbeiten" })).not.toBeInTheDocument();
+  });
+
+  it("marks a device the gateway reports as faulty", async () => {
+    vi.spyOn(devices, "listDevices").mockResolvedValue({ items: [{ ...valve, health: "fault" }], total: 1 });
+    renderPage();
+    const row = await screen.findByRole("row", { name: /Heizventil 101/ });
+    expect(within(row).getByText("Störung")).toBeInTheDocument();
   });
 });

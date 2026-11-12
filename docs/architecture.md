@@ -32,11 +32,12 @@ platform → (nothing)            users, tenants (Mandanten), events + outbox
 estate   → platform             properties (Häuser)
 devices  → estate, platform     gateways, devices, device catalogue
 twin     → devices, estate, platform   room types, rooms, twin points, rollout, simulator
+edge     → twin, devices, estate, platform   commands to gateways
 ```
 
-Enforced by `backend/tests/architecture/test_module_boundaries.py`. Planned additions: `edge` API
-surface (SB2), `integration` (SB3: the Hotel OS coupling — depends on everything, nothing depends
-on it), `energy` (SB4).
+Enforced by `backend/tests/architecture/test_module_boundaries.py`. Planned additions:
+`integration` (SB3: the Hotel OS coupling — depends on everything, nothing depends on it),
+`energy` (SB4).
 
 ## Digital twin (SB1, ADR-0005)
 
@@ -76,3 +77,22 @@ Device kinds of fire protection and life safety (`fire_alarm`, `smoke_detector`,
 `smoke_extraction`, `sprinkler`, `emergency_light`, `evacuation`) are always registered with
 `controllable = false`. Registering or patching them as controllable fails with
 `device.safety_read_only`; changing a device's kind to a safety kind drops control. ADR-0003.
+
+## Edge gateway (SB2, ADR-0004, ADR-0006)
+
+```
+gateway (edge/)                                    control plane (/edge/v1, gateway token)
+  every tick:                                         hello      → devices, rooms, points
+    bus.advance → rules (controller, window, frost)   readings   → twin points, newer only
+    read devices → SQLite buffer                      heartbeat  → gateway online, device health
+    flush buffer ─────────────────────────────────▶   commands   → pending, handed out once
+    heartbeat, commands, ack ◀──────────────────────  ack        → done / failed / refused
+```
+
+- A write to a point whose device sits behind a gateway becomes a **command** and a **desired**
+  value; the reading that confirms it clears the desired value.
+- Rooms behind a gateway are not advanced by the cloud simulator and their window/presence cannot
+  be toggled there; the edge owns them.
+- Commands exist only for controllable devices; the gateway refuses others again (ADR-0003).
+- Gateway status: `provisioned` before the first heartbeat, then `online` / `offline` (no contact for
+  two minutes).

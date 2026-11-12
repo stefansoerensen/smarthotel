@@ -149,7 +149,7 @@ export default function DeviceRegistry({ propertyCode, catalogue }: DeviceRegist
           </tbody>
         </table>
 
-        <form onSubmit={submit} className="grid grid-cols-3 items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
+        <form aria-label="Gerät anlegen" onSubmit={submit} className="grid grid-cols-3 items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
           <Field label="Art">
             <select className={inputClass} value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
               {catalogue?.kinds.map((k) => (

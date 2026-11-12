@@ -75,6 +75,21 @@ export interface Device {
   controllable: boolean;
   safety: boolean;
   status: string;
+  health: "ok" | "fault" | "unknown";
+  last_seen_at: string | null;
+}
+
+export interface Gateway {
+  code: string;
+  name: string;
+  status: "provisioned" | "online" | "offline" | "retired";
+  last_seen_at: string | null;
+  has_token: boolean;
+}
+
+export interface GatewayToken {
+  gateway_code: string;
+  token: string;
 }
 
 export interface DeviceInput {
@@ -134,6 +149,7 @@ export interface RolloutInput {
   room_type_code: string;
   room_codes: string[];
   floor?: string;
+  gateway_code?: string;
 }
 
 export interface RolloutResult {
@@ -153,6 +169,8 @@ export interface RoomPoint {
   value: number | null;
   value_at: string | null;
   source: string | null;
+  desired: number | null;
+  desired_at: string | null;
 }
 
 export interface Room {
@@ -160,6 +178,7 @@ export interface Room {
   name: string;
   floor: string | null;
   room_type_code: string | null;
+  gateway_code: string | null;
   points: RoomPoint[];
 }
 

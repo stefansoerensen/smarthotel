@@ -92,7 +92,12 @@ export default function DeviceRow({ device, catalogue, onSave, onRetire }: Devic
     <tr>
       <td className="p-2">{device.location ?? "–"}</td>
       <td className="p-2 font-mono text-xs">{device.code}</td>
-      <td className="p-2">{device.name}</td>
+      <td className="p-2">
+        {device.name}
+        {device.health === "fault" && (
+          <span className="ml-2 rounded bg-burgundy px-1.5 py-0.5 text-xs text-white">Störung</span>
+        )}
+      </td>
       <td className="p-2">{labelOf(device.kind)}</td>
       <td className="p-2">{device.protocol}</td>
       <td className="p-2">

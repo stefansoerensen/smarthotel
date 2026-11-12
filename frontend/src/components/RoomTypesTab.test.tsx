@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as devicesService from "../services/devices";
 import * as twin from "../services/twin";
 import type { Catalogue, RoomType } from "../types";
 import RoomTypesTab from "./RoomTypesTab";
@@ -25,6 +26,7 @@ const std: RoomType = {
 describe("RoomTypesTab", () => {
   beforeEach(() => {
     vi.spyOn(twin, "listRoomTypes").mockResolvedValue({ items: [std], total: 1 });
+    vi.spyOn(devicesService, "listGateways").mockResolvedValue({ items: [], total: 0 });
   });
 
   it("creates a room type with the standard points and a suggested code", async () => {
@@ -73,5 +75,21 @@ describe("RoomTypesTab", () => {
       protocol: "knx",
       writable: true,
     });
+  });
+
+  it("rolls out behind a gateway when one is chosen", async () => {
+    vi.spyOn(devicesService, "listGateways").mockResolvedValue({
+      items: [{ code: "GW-01", name: "Technik", status: "online", last_seen_at: null, has_token: true }],
+      total: 1,
+    });
+    const rollout = vi
+      .spyOn(twin, "rollout")
+      .mockResolvedValue({ rooms_created: 1, rooms_unchanged: 0, devices_created: 1, conflicts: [] });
+    render(<RoomTypesTab propertyCode="HAM1" catalogue={catalogue} />);
+    const form = await screen.findByRole("form", { name: "Ausrollen" });
+    await userEvent.type(within(form).getByLabelText("Zimmer"), "301");
+    await userEvent.selectOptions(await within(form).findByLabelText("Gateway"), "GW-01");
+    await userEvent.click(within(form).getByRole("button", { name: "Ausrollen" }));
+    expect(rollout).toHaveBeenCalledWith("HAM1", { room_type_code: "STD", room_codes: ["301"], gateway_code: "GW-01" });
   });
 });

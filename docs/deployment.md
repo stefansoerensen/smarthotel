@@ -86,3 +86,16 @@ a throwaway database; the `backend` job's *Migration drift* step proves it match
   3. Recreate it: `railway run --service app python -m app.seed.bootstrap`.
 - Nothing is ever patched inside a running container. Runtime problems are diagnosed from the logs
   and fixed by another push.
+
+## Edge gateway (optional, simulated rooms)
+
+The edge gateway is a second image (`edge/Dockerfile`). To watch a property run on its gateway:
+
+1. In the app: Haus → Geräte → register a gateway, then "Token erzeugen" (shown once).
+2. Raumtypen → Ausrollen with that gateway selected.
+3. Railway: *New* → *GitHub Repo* → same repository, **Root Directory** `edge`, variables
+   `EDGE_CLOUD_URL` (the app's public URL), `EDGE_TOKEN`, optionally `EDGE_SIM_MINUTES_PER_TICK=5`
+   to make simulated time run faster, and a volume mounted at `/data` for the buffer.
+4. The gateway appears as "online" within one tick; readings arrive in the Zimmer tab.
+
+Without a volume the buffer is lost on redeploy — acceptable for the simulator, not for a hotel.
