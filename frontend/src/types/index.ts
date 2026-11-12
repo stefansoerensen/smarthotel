@@ -28,6 +28,10 @@ export interface TenantInput {
   name: string;
 }
 
+export interface TenantPatch {
+  name: string;
+}
+
 export interface Property {
   code: string;
   tenant_code: string;
@@ -44,6 +48,20 @@ export interface PropertyInput {
   code: string;
   name: string;
   city?: string;
+}
+
+export interface PropertyPatch {
+  name: string;
+  street: string | null;
+  postal_code: string | null;
+  city: string | null;
+}
+
+export interface DevicePatch {
+  kind: string;
+  protocol: string;
+  location: string;
+  name: string;
 }
 
 export interface Device {

@@ -20,7 +20,7 @@
 | `models/platform/` | `users`, `tenants`, `outbox_events` |
 | `models/estate/` | `properties` |
 | `models/devices/` | `gateways`, `devices` |
-| `services/platform/` | `users`, `tenants`, `events.emit` |
+| `services/platform/` | `users`, `tenants` (create, rename, list), `events.emit` |
 | `services/estate/properties.py` | Create, get (tenant-scoped), list, update |
 | `services/devices/catalogue.py` | Device kinds, safety kinds, protocols |
 | `services/devices/registry.py` | Gateways and devices: register, list, update, retire |
@@ -36,6 +36,7 @@
 | GET | `/auth/me` | signed in |
 | GET | `/tenants` | signed in (scoped) |
 | POST | `/tenants` | admin |
+| PATCH | `/tenants/{code}` | admin; renames, the code stays |
 | GET | `/properties` | signed in (scoped) |
 | POST | `/properties` | admin |
 | GET | `/properties/{code}` | signed in (scoped) |
@@ -63,7 +64,9 @@
 | `services/{auth,estate,devices}.ts` | Typed API calls |
 | `hooks/useAuthStore.ts` | Token and user (Zustand) |
 | `components/Layout.tsx`, `components/Field.tsx` | Shell, form field |
+| `components/DeviceRow.tsx` | Registry row with in-place edit and retire |
+| `components/TenantItem.tsx` | Tenant with in-place rename |
 | `utils/codes.ts` | Code suggestions (`suggestCode`, `suggestDeviceCode`) |
 | `pages/LoginPage.tsx` | Anmeldung |
 | `pages/PropertiesPage.tsx` | Häuser; Mandant und Haus anlegen (admin) |
-| `pages/PropertyPage.tsx` | Haus mit Geräteregister |
+| `pages/PropertyPage.tsx` | Haus (bearbeiten für Admins) mit Geräteregister |

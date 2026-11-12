@@ -52,7 +52,7 @@ Every state change emits an event into `outbox_events` in the same transaction:
 
 | Topic | Types | Entity code |
 |---|---|---|
-| `tenant` | `created` | tenant code |
+| `tenant` | `created`, `changed` | tenant code |
 | `property` | `created`, `changed` | property code |
 | `gateway` | `registered` | `<property>/<gateway>` |
 | `device` | `registered`, `changed`, `retired` | `<property>/<device>` |

@@ -10,6 +10,12 @@ class TenantIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
 
 
+class TenantPatch(BaseModel):
+    """Changes to a tenant; the code cannot change."""
+
+    name: str = Field(min_length=1, max_length=200)
+
+
 class TenantOut(BaseModel):
     """A tenant."""
 

@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as devices from "../services/devices";
 import * as estate from "../services/estate";
+import { useAuthStore } from "../hooks/useAuthStore";
 import type { Device } from "../types";
 import PropertyPage from "./PropertyPage";
 
@@ -91,5 +92,71 @@ describe("PropertyPage", () => {
     renderPage();
     await screen.findByText("Heizventil 101");
     expect(screen.getByRole("button", { name: "Gerät anlegen" })).toBeDisabled();
+  });
+
+  it("edits a device in its row and reloads", async () => {
+    const patch = vi.spyOn(devices, "patchDevice").mockResolvedValue(valve);
+    renderPage();
+    const row = await screen.findByRole("row", { name: /Heizventil 101/ });
+    await userEvent.click(within(row).getByRole("button", { name: "Bearbeiten" }));
+    const editRow = screen.getByRole("row", { name: /Gerät 101-V bearbeiten/ });
+    const location = within(editRow).getByLabelText("Ort");
+    await userEvent.clear(location);
+    await userEvent.type(location, "105");
+    await userEvent.click(within(editRow).getByRole("button", { name: "Speichern" }));
+    expect(patch).toHaveBeenCalledWith("HAM1", "101-V", {
+      kind: "valve",
+      protocol: "knx",
+      location: "105",
+      name: "Heizventil 105",
+    });
+    expect(devices.listDevices).toHaveBeenCalledTimes(2);
+  });
+
+  it("retires a device after confirmation", async () => {
+    const retire = vi.spyOn(devices, "retireDevice").mockResolvedValue({ ...valve, status: "retired" });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderPage();
+    const row = await screen.findByRole("row", { name: /Heizventil 101/ });
+    await userEvent.click(within(row).getByRole("button", { name: "Außer Betrieb nehmen" }));
+    expect(window.confirm).toHaveBeenCalled();
+    expect(retire).toHaveBeenCalledWith("HAM1", "101-V");
+  });
+
+  it("lets an admin edit the property", async () => {
+    useAuthStore.setState({ token: "t", user: { username: "admin", role: "admin", tenant_code: null } });
+    const patch = vi.spyOn(estate, "patchProperty").mockResolvedValue({
+      code: "HAM1",
+      tenant_code: "GRP",
+      name: "Hamburg Hafen",
+      time_zone: "Europe/Berlin",
+      street: "Kai 1",
+      postal_code: "20457",
+      city: "Hamburg",
+      country_code: "DE",
+    });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Haus bearbeiten" }));
+    const form = screen.getByRole("form", { name: "Haus bearbeiten" });
+    const name = within(form).getByLabelText("Name");
+    await userEvent.clear(name);
+    await userEvent.type(name, "Hamburg Hafen");
+    await userEvent.type(within(form).getByLabelText("Straße"), "Kai 1");
+    await userEvent.type(within(form).getByLabelText("PLZ"), "20457");
+    await userEvent.click(within(form).getByRole("button", { name: "Speichern" }));
+    expect(patch).toHaveBeenCalledWith("HAM1", {
+      name: "Hamburg Hafen",
+      street: "Kai 1",
+      postal_code: "20457",
+      city: "Hamburg",
+    });
+    expect(await screen.findByRole("heading", { name: "Hamburg Hafen" })).toBeInTheDocument();
+  });
+
+  it("does not offer property editing to operators", async () => {
+    useAuthStore.setState({ token: "t", user: { username: "op", role: "operator", tenant_code: "GRP" } });
+    renderPage();
+    await screen.findByText("Heizventil 101");
+    expect(screen.queryByRole("button", { name: "Haus bearbeiten" })).not.toBeInTheDocument();
   });
 });

@@ -13,7 +13,7 @@ property and two devices registered, the smoke detector shown as read only.**
 | SB3 — Coupling with the Hotel OS | 0 | Open |
 | SB4 — Energy | 0 | Open |
 
-Counts: 18 endpoints · 6 tables · 29 backend tests (+1 migration drift) · 21 frontend tests.
+Counts: 19 endpoints · 6 tables · 31 backend tests (+1 migration drift) · 26 frontend tests.
 
 ## 2. Features
 
@@ -33,6 +33,7 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Frontend: login, Häuser, Geräteregister | Frontend | Verified | SB0·6 | |
 | Frontend: code suggestions for Mandant, Haus, Gerät | Frontend | Verified | SB0·6 | CI run 43260549510 green; 7cd6a54 deployed; tenant suggestion seen there (not submitted). |
 | Frontend: device form — Art, Ort, Protokoll, Code; name is "<Art> <Ort>" | Frontend | Verified | SB0·6 | a4dee3e deployed and seen there. Bus address only through the API until the import in SB2. |
+| Editing: rename Mandant, edit Haus (admin), edit and retire Geräte in the registry | Backend + Frontend | In progress | SB0·6 | Pushed; CI and deployed app not checked yet. Codes stay fixed. |
 | Frontend: Mandant anlegen (admin) | Frontend | Done | SB0·6 | CI run 43259030276 green; 6d9d6fa deployed, form shown to the admin there. Not yet submitted. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
@@ -61,3 +62,7 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 - 2026-11-12 — SB0 accepted on the deployed app: tenant, property and two devices registered by
   Stefan; the smoke detector shows "nur lesen". Device names typed before a4dee3e keep their
   free-text names.
+- 2026-11-12 — Editing: `PATCH /api/tenants/{code}` (rename, admin); Häuser page lists Mandanten
+  with Umbenennen; Haus page has "Haus bearbeiten" (name, street, postcode, city) for admins;
+  each device row can be edited (Art, Ort, Protokoll; name follows "Art Ort") and taken out of
+  service after a confirmation. Codes cannot be changed.

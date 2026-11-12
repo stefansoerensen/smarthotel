@@ -92,6 +92,7 @@ PostgreSQL 16; React 18, TypeScript strict, Vite, Tailwind, Vitest; GitHub Actio
 - [x] Vitest component tests for login and the registry
 - [x] Tenant form for admins on the properties page (added after the first deploy)
 - [x] Code suggestions for tenant, property and device codes
+- [x] Editing: rename tenants, edit properties, edit and retire devices (codes stay fixed)
 
 ### Task 7: Delivery pipeline
 

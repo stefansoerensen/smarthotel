@@ -91,3 +91,23 @@ async def test_unknown_time_zone_is_rejected(
     )
     assert response.status_code == 422
     assert response.json()["code"] == "property.invalid_time_zone"
+
+
+async def test_admin_renames_a_tenant(
+    client: AsyncClient, db: AsyncSession, admin_headers: dict[str, str]
+) -> None:
+    tenant = await create_tenant(db, code="REN")
+    response = await client.patch(
+        f"/api/tenants/{tenant.code}", json={"name": "Neuer Name"}, headers=admin_headers
+    )
+    assert response.status_code == 200
+    assert response.json()["name"] == "Neuer Name"
+    assert response.json()["code"] == "REN"
+    assert await events_of(db, "tenant", "REN") == ["created", "changed"]
+
+
+async def test_operator_cannot_rename_a_tenant(client: AsyncClient, db: AsyncSession) -> None:
+    own = await create_tenant(db)
+    headers = await auth_headers(db, role="operator", tenant=own)
+    response = await client.patch(f"/api/tenants/{own.code}", json={"name": "X"}, headers=headers)
+    assert response.status_code == 403

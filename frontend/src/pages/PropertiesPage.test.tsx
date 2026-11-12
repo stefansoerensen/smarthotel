@@ -102,4 +102,24 @@ describe("PropertiesPage", () => {
     await userEvent.type(within(form).getByLabelText("Name"), "Neubau Hamburg");
     expect(within(form).getByLabelText("Code")).toHaveValue("NEUBAU-HAMBURG-2");
   });
+
+  it("lets an admin rename a tenant", async () => {
+    useAuthStore.setState({ token: "t", user: { username: "admin", role: "admin", tenant_code: null } });
+    vi.spyOn(estate, "listTenants").mockResolvedValue({
+      items: [{ code: "GRP", name: "Gruppe", is_active: true }],
+      total: 1,
+    });
+    const patch = vi
+      .spyOn(estate, "patchTenant")
+      .mockResolvedValue({ code: "GRP", name: "Gruppe Nord", is_active: true });
+    renderPage();
+    const item = await screen.findByRole("listitem", { name: "Mandant GRP" });
+    await userEvent.click(within(item).getByRole("button", { name: "Umbenennen" }));
+    const input = within(item).getByLabelText("Name von GRP");
+    await userEvent.clear(input);
+    await userEvent.type(input, "Gruppe Nord");
+    await userEvent.click(within(item).getByRole("button", { name: "Speichern" }));
+    expect(patch).toHaveBeenCalledWith("GRP", { name: "Gruppe Nord" });
+    expect(estate.listTenants).toHaveBeenCalledTimes(2);
+  });
 });

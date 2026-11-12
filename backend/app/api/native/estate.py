@@ -7,7 +7,14 @@ from app.api.deps import get_current_user, get_db, get_scoped_property, require_
 from app.models.estate.property import Property
 from app.models.platform.user import User
 from app.schemas.native.common import Page
-from app.schemas.native.estate import PropertyIn, PropertyOut, PropertyPatch, TenantIn, TenantOut
+from app.schemas.native.estate import (
+    PropertyIn,
+    PropertyOut,
+    PropertyPatch,
+    TenantIn,
+    TenantOut,
+    TenantPatch,
+)
 from app.services.estate import properties
 from app.services.platform import tenants
 
@@ -46,6 +53,20 @@ async def create_tenant(
 ) -> TenantOut:
     """Create a tenant (admins only)."""
     tenant = await tenants.create_tenant(db, code=data.code, name=data.name)
+    await db.commit()
+    return TenantOut.model_validate(tenant)
+
+
+@router.patch("/tenants/{tenant_code}", response_model=TenantOut)
+async def patch_tenant(
+    tenant_code: str,
+    data: TenantPatch,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> TenantOut:
+    """Rename a tenant (admins only)."""
+    tenant = await tenants.get_tenant(db, tenant_code)
+    await tenants.rename_tenant(db, tenant, data.name)
     await db.commit()
     return TenantOut.model_validate(tenant)
 

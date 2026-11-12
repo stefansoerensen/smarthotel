@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Field, { buttonClass, inputClass } from "../components/Field";
+import TenantItem from "../components/TenantItem";
 import { useAuthStore } from "../hooks/useAuthStore";
-import { createProperty, createTenant, listProperties, listTenants } from "../services/estate";
+import { createProperty, createTenant, listProperties, listTenants, patchTenant } from "../services/estate";
 import type { ApiError, Property, Tenant } from "../types";
 import { suggestCode } from "../utils/codes";
 
@@ -69,6 +70,17 @@ export default function PropertiesPage() {
     }
   }
 
+  async function renameTenant(tenantCode: string, name: string) {
+    setError(null);
+    try {
+      await patchTenant(tenantCode, { name });
+      await load();
+    } catch (err) {
+      setError((err as ApiError).message);
+      throw err;
+    }
+  }
+
   return (
     <section className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold">Häuser</h1>
@@ -86,6 +98,16 @@ export default function PropertiesPage() {
           </li>
         ))}
       </ul>
+      {isAdmin && tenants.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h2 className="text-base font-semibold">Mandanten</h2>
+          <ul className="divide-y divide-ink/10 rounded-lg bg-white shadow-sm">
+            {tenants.map((t) => (
+              <TenantItem key={t.code} tenant={t} onRename={(name) => renameTenant(t.code, name)} />
+            ))}
+          </ul>
+        </div>
+      )}
       {isAdmin && (
         <form
           aria-label="Mandant anlegen"

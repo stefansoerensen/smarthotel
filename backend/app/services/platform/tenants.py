@@ -60,3 +60,19 @@ async def list_tenants(
     if only_id is not None:
         stmt = stmt.where(Tenant.id == only_id)
     return await paginate(session, stmt, skip=skip, limit=limit)
+
+
+async def rename_tenant(session: AsyncSession, tenant: Tenant, name: str) -> Tenant:
+    """Change a tenant's display name; the code stays, it identifies the tenant."""
+    if tenant.name != name:
+        tenant.name = name
+        await session.flush()
+        await events.emit(
+            session,
+            topic="tenant",
+            event_type="changed",
+            entity_code=tenant.code,
+            property_code=None,
+            payload={"fields": ["name"]},
+        )
+    return tenant
