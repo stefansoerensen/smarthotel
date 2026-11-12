@@ -1,0 +1,18 @@
+import type { Page, Property, PropertyInput, Tenant } from "../types";
+import { api } from "./api";
+
+export async function listTenants(): Promise<Page<Tenant>> {
+  return (await api.get<Page<Tenant>>("/tenants", { params: { limit: 500 } })).data;
+}
+
+export async function listProperties(): Promise<Page<Property>> {
+  return (await api.get<Page<Property>>("/properties", { params: { limit: 500 } })).data;
+}
+
+export async function getProperty(code: string): Promise<Property> {
+  return (await api.get<Property>(`/properties/${encodeURIComponent(code)}`)).data;
+}
+
+export async function createProperty(input: PropertyInput): Promise<Property> {
+  return (await api.post<Property>("/properties", input)).data;
+}
