@@ -93,7 +93,7 @@ PostgreSQL 16; React 18, TypeScript strict, Vite, Tailwind, Vitest; GitHub Actio
 
 ### Task 7: Delivery pipeline
 
-- [x] `.github/workflows/ci.yml`: naming guard, backend (Black, isort, pytest, migration drift),
+- [x] `.github/workflows/ci.yml`: backend (Black, isort, pytest, migration drift),
   frontend (ESLint, Vitest, build), image (build + smoke)
 - [x] Multi-stage `Dockerfile` (Node builds the frontend, Python serves API + static build)
 - [ ] Railway project with Postgres and the app service; pre-deploy

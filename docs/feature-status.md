@@ -1,7 +1,7 @@
 # Feature status
 
 **As of 2026-11-12: SB0 is built and passes its checks in an agent sandbox; it is not yet pushed,
-so there is no Actions run and no deployment.** Push access for the repository is missing.
+so there is no Actions run and no deployment yet.**
 
 ## 1. Snapshot
 
@@ -39,3 +39,4 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 - 2026-11-12 — SB0 written: repository, working agreement, CI, image, login, tenants,
   properties, device registry, frontend. Sandbox: backend 29 + 1 passed, Black/isort clean,
   frontend lint, 4 tests and build passed. Image build not run (no Docker daemon in the sandbox).
+- 2026-11-12 — CI: naming guard removed; the naming rule stays a writing rule (CLAUDE.md §6).

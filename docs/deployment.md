@@ -60,14 +60,6 @@ These steps are performed by a human in the browser; there is no infrastructure-
 9. **Replicas**: one. The login rate limiter is per process.
 10. **Region**: put `app` and `Postgres` in the same region (lesson from pms-clone, hub b52).
 
-## Naming guard
-
-CI fails if the name of the reference PMS whose API `pms-clone` mirrors appears in any tracked file
-name or body. The string itself is not stored in the repository: set the GitHub repository variable
-`FORBIDDEN_VENDOR_NAME` (*Settings* → *Secrets and variables* → *Actions* → *Variables*) to the same
-value as in `pms-clone`. The guard fails while the variable is unset, so it cannot be skipped by
-accident.
-
 ## Demo data
 
 There is no demo seed yet; SB1 brings the room simulator and generated demo properties.

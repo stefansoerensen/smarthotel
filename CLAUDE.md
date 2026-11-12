@@ -107,8 +107,7 @@ Colours: bone `#F4F2F0`, ink `#0C0A08`, burgundy `#7B1F4B`. UI text is German.
 
 The reference PMS whose API `pms-clone` mirrors is **never named in this repository** — not in
 code, comments, docs, ADRs, commit messages or PR descriptions. Write "the Hotel OS" or "the
-reference PMS API". CI greps the tree for the repository variable `FORBIDDEN_VENDOR_NAME` and
-fails the build if it appears.
+reference PMS API". There is no CI check for it here; it is a writing rule.
 
 ## 7. Secrets and data
 

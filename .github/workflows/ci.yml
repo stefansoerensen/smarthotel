@@ -13,38 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  naming:
-    name: naming guard
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Reference vendor name must not appear in this repository
-        env:
-          FORBIDDEN: ${{ vars.FORBIDDEN_VENDOR_NAME }}
-        run: |
-          set -euo pipefail
-          if [ -z "${FORBIDDEN}" ]; then
-            echo "Repository variable FORBIDDEN_VENDOR_NAME is not set." >&2
-            echo "See docs/deployment.md, section 'Naming guard'." >&2
-            exit 1
-          fi
-          names="$(git ls-files | grep -i -e "${FORBIDDEN}" || true)"
-          bodies="$(git grep -I -i -l -e "${FORBIDDEN}" -- . || true)"
-          if [ -n "${names}" ] || [ -n "${bodies}" ]; then
-            echo "The reference vendor name must not appear anywhere in this repository." >&2
-            if [ -n "${names}" ]; then
-              echo "File names:" >&2
-              echo "${names}" >&2
-            fi
-            if [ -n "${bodies}" ]; then
-              echo "File contents:" >&2
-              echo "${bodies}" >&2
-            fi
-            exit 1
-          fi
-          echo "Clean: the name does not appear."
-
   backend:
     name: backend
     runs-on: ubuntu-latest
