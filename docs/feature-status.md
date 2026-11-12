@@ -32,7 +32,7 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Device registry with catalogue and filters | Devices | Done | SB0·5 | Kinds, protocols, location, retire instead of delete. |
 | Safety devices read only | Devices | Done | SB0·5 | ADR-0003. |
 | Frontend: login, Häuser, Geräteregister | Frontend | Done | SB0·6 | |
-| Frontend: Mandant anlegen (admin) | Frontend | In progress | SB0·6 | Pushed; CI and the deployed form not checked yet. |
+| Frontend: Mandant anlegen (admin) | Frontend | Done | SB0·6 | CI run 43259030276 green; 6d9d6fa deployed, form shown to the admin there. Not yet submitted. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
 
