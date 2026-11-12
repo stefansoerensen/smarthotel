@@ -1,8 +1,9 @@
 """A registered device: one physical thing in the building with one bus address."""
 
 import uuid
+from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -33,3 +34,8 @@ class Device(TimestampMixin, Base):
     location: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     controllable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    # Reported by the gateway's heartbeat: ok, fault, or unknown before the first report.
+    health: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="unknown", server_default="unknown"
+    )
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

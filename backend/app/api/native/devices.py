@@ -3,8 +3,11 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db, get_scoped_property
+from app.api.deps import get_clock, get_current_user, get_db, get_scoped_property
+from app.core.clock import Clock
+from app.core.errors import NotFoundError
 from app.models.devices.device import Device
+from app.models.devices.gateway import Gateway
 from app.models.estate.property import Property
 from app.models.platform.user import User
 from app.schemas.native.common import Page
@@ -15,6 +18,7 @@ from app.schemas.native.devices import (
     DevicePatch,
     GatewayIn,
     GatewayOut,
+    GatewayTokenOut,
     KindOut,
 )
 from app.services.devices import catalogue, registry
@@ -34,6 +38,8 @@ def _out(device: Device, gateway_code: str | None) -> DeviceOut:
         controllable=device.controllable,
         safety=catalogue.is_safety(device.kind),
         status=device.status,
+        health=device.health,
+        last_seen_at=device.last_seen_at,
     )
 
 
@@ -41,6 +47,16 @@ async def _one(db: AsyncSession, device: Device) -> DeviceOut:
     ids = {device.gateway_id} if device.gateway_id else set()
     codes = await registry.gateway_codes(db, ids)
     return _out(device, codes.get(device.gateway_id) if device.gateway_id else None)
+
+
+def _gateway_out(gateway: Gateway, clock: Clock) -> GatewayOut:
+    return GatewayOut(
+        code=gateway.code,
+        name=gateway.name,
+        status=registry.gateway_status(gateway, clock.now()),
+        last_seen_at=gateway.last_seen_at,
+        has_token=gateway.token_hash is not None,
+    )
 
 
 @router.get("/device-catalogue", response_model=CatalogueOut)
@@ -62,11 +78,13 @@ async def device_catalogue(_: User = Depends(get_current_user)) -> CatalogueOut:
 
 @router.get("/properties/{property_code}/gateways", response_model=Page[GatewayOut])
 async def list_gateways(
-    prop: Property = Depends(get_scoped_property), db: AsyncSession = Depends(get_db)
+    prop: Property = Depends(get_scoped_property),
+    db: AsyncSession = Depends(get_db),
+    clock: Clock = Depends(get_clock),
 ) -> Page[GatewayOut]:
     """Gateways of a property."""
     rows = await registry.list_gateways(db, prop)
-    return Page(items=[GatewayOut.model_validate(g) for g in rows], total=len(rows))
+    return Page(items=[_gateway_out(g, clock) for g in rows], total=len(rows))
 
 
 @router.post(
@@ -78,11 +96,30 @@ async def register_gateway(
     data: GatewayIn,
     prop: Property = Depends(get_scoped_property),
     db: AsyncSession = Depends(get_db),
+    clock: Clock = Depends(get_clock),
 ) -> GatewayOut:
     """Register an edge gateway."""
     gateway = await registry.register_gateway(db, prop, code=data.code, name=data.name)
     await db.commit()
-    return GatewayOut.model_validate(gateway)
+    return _gateway_out(gateway, clock)
+
+
+@router.post(
+    "/properties/{property_code}/gateways/{gateway_code}/token", response_model=GatewayTokenOut
+)
+async def create_gateway_token(
+    gateway_code: str,
+    prop: Property = Depends(get_scoped_property),
+    db: AsyncSession = Depends(get_db),
+    clock: Clock = Depends(get_clock),
+) -> GatewayTokenOut:
+    """Create a new token for the gateway; the old one stops working. Shown once (ADR-0006)."""
+    gateway = await registry.find_gateway(db, prop, gateway_code)
+    if gateway is None:
+        raise NotFoundError("gateway", gateway_code)
+    token = await registry.create_gateway_token(db, gateway, now=clock.now())
+    await db.commit()
+    return GatewayTokenOut(gateway_code=gateway.code, token=token)
 
 
 @router.get("/properties/{property_code}/devices", response_model=Page[DeviceOut])

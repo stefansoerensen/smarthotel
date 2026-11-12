@@ -11,6 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
+from app.api.edge.v1 import router as edge_router
 from app.api.errors import register_error_handlers
 from app.api.native import api_router
 from app.core.config import settings
@@ -18,7 +19,7 @@ from app.core.ratelimit import RateLimiter
 
 logger = logging.getLogger(__name__)
 
-_API_PREFIXES = ("api",)
+_API_PREFIXES = ("api", "edge")
 
 
 def mount_static(app: FastAPI) -> None:
@@ -31,14 +32,17 @@ def mount_static(app: FastAPI) -> None:
     static_dir = Path(settings.static_dir).resolve()
     index_file = static_dir / "index.html"
 
-    @app.api_route(
-        "/api/{path:path}",
-        methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
-        include_in_schema=False,
-    )
-    async def api_not_found(path: str) -> Response:
-        """Unknown API path: JSON 404."""
-        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    for prefix in _API_PREFIXES:
+
+        @app.api_route(
+            f"/{prefix}/{{path:path}}",
+            methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
+            include_in_schema=False,
+            name=f"{prefix}_not_found",
+        )
+        async def api_not_found(path: str) -> Response:
+            """Unknown API path: JSON 404."""
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
 
     if not index_file.is_file():
         logger.warning("no %s; the frontend is not served by this process", index_file)
@@ -82,6 +86,7 @@ def create_app() -> FastAPI:
         return {"status": "ok", "database": "ok"}
 
     app.include_router(api_router)
+    app.include_router(edge_router)
     mount_static(app)
     return app
 

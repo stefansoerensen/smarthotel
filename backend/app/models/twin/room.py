@@ -49,3 +49,6 @@ class RoomPoint(TimestampMixin, Base):
     value: Mapped[float | None] = mapped_column(Float, nullable=True)
     value_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     source: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # A value written for a point behind a gateway, until the gateway reports it (ADR-0006).
+    desired: Mapped[float | None] = mapped_column(Float, nullable=True)
+    desired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -15,14 +15,20 @@ class GatewayIn(BaseModel):
 
 
 class GatewayOut(BaseModel):
-    """A gateway."""
-
-    model_config = ConfigDict(from_attributes=True)
+    """A gateway; ``status`` is provisioned, online or offline (no contact for two minutes)."""
 
     code: str
     name: str
     status: str
     last_seen_at: datetime | None
+    has_token: bool
+
+
+class GatewayTokenOut(BaseModel):
+    """A new gateway token: shown once, then only its hash is kept."""
+
+    gateway_code: str
+    token: str
 
 
 class DeviceIn(BaseModel):
@@ -63,6 +69,8 @@ class DeviceOut(BaseModel):
     controllable: bool
     safety: bool
     status: str
+    health: str
+    last_seen_at: datetime | None
 
 
 class KindOut(BaseModel):

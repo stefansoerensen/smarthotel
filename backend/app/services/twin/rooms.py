@@ -95,6 +95,7 @@ async def rollout(
     room_codes: list[str],
     *,
     floor: str | None = None,
+    gateway_code: str | None = None,
 ) -> RolloutResult:
     """Create rooms of ``room_type`` with one device and twin point per template point.
 
@@ -107,6 +108,11 @@ async def rollout(
             "twin.rollout_too_large", f"At most {MAX_ROLLOUT_ROOMS} rooms per rollout"
         )
     specs = [templates.spec_of(p) for p in await templates.list_points(session, room_type)]
+    if (
+        gateway_code is not None
+        and await registry.find_gateway(session, prop, gateway_code) is None
+    ):
+        raise NotFoundError("gateway", gateway_code)
     result = RolloutResult()
     for code in codes:
         room = await find_room(session, prop, code)
@@ -154,6 +160,7 @@ async def rollout(
                     protocol=spec.protocol,
                     location=code,
                     controllable=spec.writable,
+                    gateway_code=gateway_code,
                 )
                 result.devices_created += 1
             session.add(
@@ -174,14 +181,72 @@ async def rollout(
 
 async def write_point(
     session: AsyncSession, room: Room, key: str, value: float, *, now: datetime, source: str
-) -> RoomPoint:
-    """Set a writable point's value in the twin. Commands to devices follow with the edge (SB2)."""
+) -> tuple[RoomPoint, bool]:
+    """Set a writable point. Returns the point and whether its device sits behind a gateway.
+
+    Behind a gateway the value becomes *desired* until the gateway reports it; the caller then
+    queues a command (ADR-0006). Without a gateway the twin takes the value directly.
+    """
     point = await _point(session, room, key)
     if not point.writable:
         raise DomainError("twin.point_read_only", f"Point '{key}' is read only")
-    _set(point, value, now=now, source=source)
+    behind_gateway = bool(
+        point.device_id and await registry.gateways_of_devices(session, {point.device_id})
+    )
+    if behind_gateway:
+        point.desired = value
+        point.desired_at = now
+    else:
+        _set(point, value, now=now, source=source)
     await session.flush()
-    return point
+    return point, behind_gateway
+
+
+async def edge_room_ids(session: AsyncSession, room_ids: list) -> set:
+    """Rooms with at least one device behind a gateway: the edge owns them, not the cloud simulator."""
+    grouped = await points_of(session, room_ids)
+    device_ids = {p.device_id for pts in grouped.values() for p in pts if p.device_id}
+    with_gateway = set(await registry.gateways_of_devices(session, device_ids))
+    return {
+        room_id for room_id, pts in grouped.items() if any(p.device_id in with_gateway for p in pts)
+    }
+
+
+async def room_gateway_codes(session: AsyncSession, prop: Property, room_ids: list) -> dict:
+    """Map room id → code of the gateway its devices sit behind (first one found)."""
+    grouped = await points_of(session, room_ids)
+    device_ids = {p.device_id for pts in grouped.values() for p in pts if p.device_id}
+    by_device = await registry.gateways_of_devices(session, device_ids)
+    codes = {g.id: g.code for g in await registry.list_gateways(session, prop)}
+    result: dict = {}
+    for room_id, pts in grouped.items():
+        for p in pts:
+            if p.device_id in by_device:
+                result[room_id] = codes.get(by_device[p.device_id])
+                break
+    return result
+
+
+async def apply_reading(
+    session: AsyncSession, device_id, value: float, measured_at: datetime
+) -> bool:
+    """Store a gateway's reading on the twin point of ``device_id`` if it is newer than the last.
+
+    Returns False when no point belongs to the device or the reading is not newer. A reading that
+    matches the desired value clears it.
+    """
+    result = await session.execute(select(RoomPoint).where(RoomPoint.device_id == device_id))
+    point = result.scalars().first()
+    if point is None:
+        return False
+    if point.value_at is not None and measured_at <= point.value_at:
+        return False
+    _set(point, value, now=measured_at, source="edge")
+    if point.desired is not None and abs(point.desired - value) < 0.01:
+        point.desired = None
+        point.desired_at = None
+    await session.flush()
+    return True
 
 
 async def _point(session: AsyncSession, room: Room, key: str) -> RoomPoint:
@@ -206,6 +271,10 @@ async def simulate_inputs(
     now: datetime,
 ) -> None:
     """Let the simulator open or close a window or mark the room occupied."""
+    if room.id in await edge_room_ids(session, [room.id]):
+        raise DomainError(
+            "twin.edge_room", f"Room '{room.code}' is run by its gateway, not the cloud simulator"
+        )
     points = {p.key: p for p in (await points_of(session, [room.id]))[room.id]}
     for key, flag in (("window", window), ("presence", presence)):
         if flag is not None and key in points:
@@ -217,7 +286,8 @@ async def simulate_step(
     session: AsyncSession, prop: Property, *, minutes: float, outdoor: float, now: datetime
 ) -> int:
     """Advance every room of ``prop`` that has a temperature point; returns the number of rooms."""
-    rooms = await list_rooms(session, prop)
+    edge_rooms = await edge_room_ids(session, [r.id for r in await list_rooms(session, prop)])
+    rooms = [r for r in await list_rooms(session, prop) if r.id not in edge_rooms]
     grouped = await points_of(session, [r.id for r in rooms])
     simulated = 0
     for room in rooms:

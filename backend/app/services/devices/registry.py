@@ -6,7 +6,10 @@ the estate tables itself.
 
 from __future__ import annotations
 
+import hashlib
+import secrets
 import uuid
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
@@ -258,4 +261,86 @@ async def retire_device(session: AsyncSession, prop: Property, device: Device) -
             entity_code=_entity(prop, device.code),
             property_code=prop.code,
         )
+    return device
+
+
+# ---------- gateways as edge clients (ADR-0006) ----------
+
+GATEWAY_OFFLINE_AFTER = timedelta(minutes=2)
+
+
+def hash_token(token: str) -> str:
+    """SHA-256 of a gateway token, as stored."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+async def create_gateway_token(session: AsyncSession, gateway: Gateway, *, now: datetime) -> str:
+    """Create a new token for ``gateway``; the previous one stops working. Returned once."""
+    token = secrets.token_urlsafe(32)
+    gateway.token_hash = hash_token(token)
+    gateway.provisioned_at = now
+    await session.flush()
+    return token
+
+
+async def gateway_for_token(session: AsyncSession, token: str) -> Gateway | None:
+    """The gateway that owns ``token``, or None."""
+    result = await session.execute(select(Gateway).where(Gateway.token_hash == hash_token(token)))
+    gateway = result.scalar_one_or_none()
+    if gateway is None or gateway.status == "retired":
+        return None
+    return gateway
+
+
+def gateway_status(gateway: Gateway, now: datetime) -> str:
+    """``provisioned`` before the first heartbeat, then ``online`` or ``offline`` by last contact."""
+    if gateway.status == "retired":
+        return "retired"
+    if gateway.last_seen_at is None:
+        return "provisioned"
+    return "online" if now - gateway.last_seen_at <= GATEWAY_OFFLINE_AFTER else "offline"
+
+
+async def gateway_devices(session: AsyncSession, gateway: Gateway) -> list[Device]:
+    """Active devices behind ``gateway``."""
+    result = await session.execute(
+        select(Device)
+        .where(Device.gateway_id == gateway.id, Device.status != "retired")
+        .order_by(Device.code)
+    )
+    return list(result.scalars())
+
+
+async def record_heartbeat(
+    session: AsyncSession, gateway: Gateway, health: dict[str, bool], *, now: datetime
+) -> None:
+    """Mark the gateway seen and store the health it reports for its devices."""
+    gateway.last_seen_at = now
+    gateway.status = "online"
+    for device in await gateway_devices(session, gateway):
+        if device.code in health:
+            device.health = "ok" if health[device.code] else "fault"
+            device.last_seen_at = now
+    await session.flush()
+
+
+async def gateways_of_devices(
+    session: AsyncSession, device_ids: set[uuid.UUID]
+) -> dict[uuid.UUID, uuid.UUID]:
+    """Map device ids to the id of the gateway they sit behind (devices without one are left out)."""
+    if not device_ids:
+        return {}
+    result = await session.execute(
+        select(Device.id, Device.gateway_id).where(
+            Device.id.in_(device_ids), Device.gateway_id.is_not(None)
+        )
+    )
+    return {row.id: row.gateway_id for row in result}
+
+
+async def get_device_by_id(session: AsyncSession, device_id: uuid.UUID) -> Device:
+    """Load a device by id."""
+    device = await session.get(Device, device_id)
+    if device is None:
+        raise NotFoundError("device", device_id)
     return device

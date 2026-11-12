@@ -60,6 +60,7 @@ class RolloutIn(BaseModel):
     room_type_code: str
     room_codes: list[str] = Field(min_length=1, max_length=500)
     floor: str | None = Field(default=None, max_length=20)
+    gateway_code: str | None = None
 
 
 class RolloutOut(BaseModel):
@@ -83,6 +84,8 @@ class RoomPointOut(BaseModel):
     value: float | None
     value_at: datetime | None
     source: str | None
+    desired: float | None
+    desired_at: datetime | None
 
 
 class RoomOut(BaseModel):
@@ -92,6 +95,7 @@ class RoomOut(BaseModel):
     name: str
     floor: str | None
     room_type_code: str | None
+    gateway_code: str | None
     points: list[RoomPointOut]
 
 

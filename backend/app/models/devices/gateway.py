@@ -25,3 +25,6 @@ class Gateway(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="provisioned")
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # SHA-256 of the gateway's token (ADR-0006); the token itself is shown once and never stored.
+    token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    provisioned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -25,6 +25,7 @@ from app.schemas.native.twin import (
     TemplatePointOut,
 )
 from app.services.devices import registry
+from app.services.edge import commands
 from app.services.twin import rooms, templates
 
 router = APIRouter(tags=["twin"])
@@ -50,8 +51,9 @@ async def _room_type_out(db: AsyncSession, room_type: RoomType) -> RoomTypeOut:
     )
 
 
-async def _rooms_out(db: AsyncSession, items: list[Room]) -> list[RoomOut]:
+async def _rooms_out(db: AsyncSession, prop: Property, items: list[Room]) -> list[RoomOut]:
     grouped = await rooms.points_of(db, [r.id for r in items])
+    gateways = await rooms.room_gateway_codes(db, prop, [r.id for r in items])
     type_codes = await rooms.room_type_codes(db, {r.room_type_id for r in items if r.room_type_id})
     device_ids = {p.device_id for pts in grouped.values() for p in pts if p.device_id}
     dev_codes = await registry.device_codes(db, device_ids)
@@ -61,6 +63,7 @@ async def _rooms_out(db: AsyncSession, items: list[Room]) -> list[RoomOut]:
             name=r.name,
             floor=r.floor,
             room_type_code=type_codes.get(r.room_type_id) if r.room_type_id else None,
+            gateway_code=gateways.get(r.id),
             points=[
                 RoomPointOut(
                     key=p.key,
@@ -72,6 +75,8 @@ async def _rooms_out(db: AsyncSession, items: list[Room]) -> list[RoomOut]:
                     value=p.value,
                     value_at=p.value_at,
                     source=p.source,
+                    desired=p.desired,
+                    desired_at=p.desired_at,
                 )
                 for p in grouped[r.id]
             ],
@@ -169,7 +174,9 @@ async def rollout(
 ) -> RolloutOut:
     """Roll a room type out to rooms: rooms, devices and twin points in one step."""
     room_type = await templates.get_room_type(db, prop, data.room_type_code)
-    result = await rooms.rollout(db, prop, room_type, data.room_codes, floor=data.floor)
+    result = await rooms.rollout(
+        db, prop, room_type, data.room_codes, floor=data.floor, gateway_code=data.gateway_code
+    )
     await db.commit()
     return RolloutOut(
         rooms_created=result.rooms_created,
@@ -184,7 +191,7 @@ async def list_rooms(
     prop: Property = Depends(get_scoped_property), db: AsyncSession = Depends(get_db)
 ) -> Page[RoomOut]:
     """All rooms of a property with their twin points."""
-    items = await _rooms_out(db, await rooms.list_rooms(db, prop))
+    items = await _rooms_out(db, prop, await rooms.list_rooms(db, prop))
     return Page(items=items, total=len(items))
 
 
@@ -195,7 +202,7 @@ async def get_room(
     db: AsyncSession = Depends(get_db),
 ) -> RoomOut:
     """One room with its twin points."""
-    return (await _rooms_out(db, [await rooms.get_room(db, prop, room_code)]))[0]
+    return (await _rooms_out(db, prop, [await rooms.get_room(db, prop, room_code)]))[0]
 
 
 @router.put("/properties/{property_code}/rooms/{room_code}/points/{key}", response_model=RoomOut)
@@ -209,8 +216,13 @@ async def write_point(
 ) -> RoomOut:
     """Set a writable point (set point, light, …) in the twin."""
     room = await rooms.get_room(db, prop, room_code)
-    await rooms.write_point(db, room, key, data.value, now=clock.now(), source="manual")
-    out = (await _rooms_out(db, [room]))[0]
+    point, behind_gateway = await rooms.write_point(
+        db, room, key, data.value, now=clock.now(), source="manual"
+    )
+    if behind_gateway and point.device_id is not None:
+        device = await registry.get_device_by_id(db, point.device_id)
+        await commands.create(db, prop, device, key=key, value=data.value, now=clock.now())
+    out = (await _rooms_out(db, prop, [room]))[0]
     await db.commit()
     return out
 
@@ -246,6 +258,6 @@ async def simulator_room(
     await rooms.simulate_inputs(
         db, room, window=data.window, presence=data.presence, now=clock.now()
     )
-    out = (await _rooms_out(db, [room]))[0]
+    out = (await _rooms_out(db, prop, [room]))[0]
     await db.commit()
     return out
