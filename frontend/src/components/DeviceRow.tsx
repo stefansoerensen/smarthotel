@@ -1,7 +1,7 @@
 import { Pencil, PowerOff, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import type { Catalogue, Device, DevicePatch } from "../types";
-import { inputClass } from "./Field";
+import Field, { inputClass } from "./Field";
 
 interface DeviceRowProps {
   device: Device;
@@ -40,49 +40,49 @@ export default function DeviceRow({ device, catalogue, onSave, onRetire }: Devic
   }
 
   if (editing) {
+    const preview = draft.location.trim() ? `${labelOf(draft.kind)} ${draft.location.trim()}` : "–";
     return (
       <tr aria-label={`Gerät ${device.code} bearbeiten`} className="bg-burgundy-light/40">
-        <td className="p-2">
-          <label className="sr-only" htmlFor={`loc-${device.code}`}>
-            Ort
-          </label>
-          <input
-            id={`loc-${device.code}`}
-            className={inputClass}
-            value={draft.location}
-            placeholder="Zimmernummer, Flur o. ä."
-            onChange={(e) => setDraft({ ...draft, location: e.target.value })}
-          />
-        </td>
-        <td className="p-2 font-mono text-xs">{device.code}</td>
-        <td className="p-2 text-ink/60">{draft.location.trim() ? `${labelOf(draft.kind)} ${draft.location.trim()}` : "–"}</td>
-        <td className="p-2">
-          <select aria-label="Art" className={inputClass} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>
-            {catalogue?.kinds.map((k) => (
-              <option key={k.kind} value={k.kind}>
-                {k.label}
-              </option>
-            ))}
-          </select>
-        </td>
-        <td className="p-2">
-          <select aria-label="Protokoll" className={inputClass} value={draft.protocol} onChange={(e) => setDraft({ ...draft, protocol: e.target.value })}>
-            {catalogue &&
-              Object.entries(catalogue.protocols).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-          </select>
-        </td>
-        <td className="p-2" />
-        <td className="whitespace-nowrap p-2 text-right">
-          <button type="button" className={`${smallButton} font-medium text-burgundy`} disabled={!draft.location.trim()} onClick={save}>
-            Speichern
-          </button>
-          <button type="button" className={smallButton} onClick={() => setEditing(false)}>
-            Abbrechen
-          </button>
+        <td colSpan={7} className="p-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <span className="self-center font-mono text-xs">{device.code}</span>
+            <Field label="Art">
+              <select className={inputClass} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>
+                {catalogue?.kinds.map((k) => (
+                  <option key={k.kind} value={k.kind}>
+                    {k.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Ort">
+              <input
+                className={inputClass}
+                value={draft.location}
+                placeholder="Zimmernummer, Flur o. ä."
+                onChange={(e) => setDraft({ ...draft, location: e.target.value })}
+              />
+            </Field>
+            <Field label="Protokoll">
+              <select className={inputClass} value={draft.protocol} onChange={(e) => setDraft({ ...draft, protocol: e.target.value })}>
+                {catalogue &&
+                  Object.entries(catalogue.protocols).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+            <span className="self-center text-ink/60">→ {preview}</span>
+            <span className="ml-auto whitespace-nowrap">
+              <button type="button" className={`${smallButton} font-medium text-burgundy`} disabled={!draft.location.trim()} onClick={save}>
+                Speichern
+              </button>
+              <button type="button" className={smallButton} onClick={() => setEditing(false)}>
+                Abbrechen
+              </button>
+            </span>
+          </div>
         </td>
       </tr>
     );
