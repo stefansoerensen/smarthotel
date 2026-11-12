@@ -1,13 +1,14 @@
 # Feature status
 
-**As of 2026-11-12: SB0 is on `main` and green in CI (run 43251629132, commit 0065e8e). Railway is
-not set up yet, so nothing is deployed.**
+**As of 2026-11-12: SB0 is on `main` and green in CI (run 43251629132, commit 0065e8e). Deployed on
+Railway; health, JSON 404, 401 without token and the SPA checked there. Login and the registry
+still have to be used once on the deployed app.**
 
 ## 1. Snapshot
 
 | Stage | Tasks done / total | State |
 |---|---|---|
-| SB0 — Foundation | 6 / 7 | Green in CI. Railway not set up. |
+| SB0 — Foundation | 6 / 7 | Green in CI, deployed. Login and registry not yet used on the deployed app. |
 | SB1 — Device model, templates, twin, room simulator | 0 | Open |
 | SB2 — Edge gateway against the simulator | 0 | Open |
 | SB3 — Coupling with the Hotel OS | 0 | Open |
@@ -22,7 +23,7 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 
 | Feature | Area | Status | Plan·Task | Notes |
 |---|---|---|---|---|
-| Health check, JSON 404 under `/api` | Platform | Done | SB0·2 | |
+| Health check, JSON 404 under `/api` | Platform | Verified | SB0·2 | |
 | Settings: URL normalisation, production secret guard | Platform | Done | SB0·2 | |
 | Login, current user, login rate limit | Platform | Done | SB0·3 | Roles `admin`, `operator`. |
 | Tenants (Mandanten) | Platform | Done | SB0·4 | Admins create; operators see their own. |
@@ -32,7 +33,7 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Safety devices read only | Devices | Done | SB0·5 | ADR-0003. |
 | Frontend: login, Häuser, Geräteregister | Frontend | Done | SB0·6 | |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
-| Railway deployment | Delivery | Open | SB0·7 | Human steps in deployment.md. |
+| Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
 
 ## 3. Changelog
 
@@ -42,3 +43,6 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 - 2026-11-12 — CI: naming guard removed; the naming rule stays a writing rule (CLAUDE.md §6).
 - 2026-11-12 — First push. Actions run 43251629132 green: backend 29 + 1 migration drift, frontend
   lint, 4 tests and build, image build and smoke.
+- 2026-11-12 — Railway: 39ab656 deployed. Checked on the app: health ok with database, unknown
+  `/api` path JSON 404, `/api/auth/me` and `/api/properties` 401 without token, wrong login 401
+  with `auth.invalid_credentials`, `/properties` serves the SPA, login page renders.

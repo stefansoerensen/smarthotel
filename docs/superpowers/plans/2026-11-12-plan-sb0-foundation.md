@@ -96,7 +96,7 @@ PostgreSQL 16; React 18, TypeScript strict, Vite, Tailwind, Vitest; GitHub Actio
 - [x] `.github/workflows/ci.yml`: backend (Black, isort, pytest, migration drift),
   frontend (ESLint, Vitest, build), image (build + smoke)
 - [x] Multi-stage `Dockerfile` (Node builds the frontend, Python serves API + static build)
-- [ ] Railway project with Postgres and the app service; pre-deploy
+- [x] Railway project with Postgres and the app service; pre-deploy
   `sh -lc 'python -m alembic upgrade head && python -m app.seed.bootstrap'` — **human step**
   (see `docs/deployment.md`)
 - [ ] First green Actions run on `main` (done: run 43251629132) and the login checked on the
