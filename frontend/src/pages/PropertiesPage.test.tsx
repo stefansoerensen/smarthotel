@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -54,5 +54,52 @@ describe("PropertiesPage", () => {
     renderPage();
     await screen.findByText("Noch kein Haus angelegt.");
     expect(screen.queryByRole("form", { name: "Mandant anlegen" })).not.toBeInTheDocument();
+  });
+
+  it("suggests the tenant code from the name until the code is edited", async () => {
+    useAuthStore.setState({ token: "t", user: { username: "admin", role: "admin", tenant_code: null } });
+    const create = vi
+      .spyOn(estate, "createTenant")
+      .mockResolvedValue({ code: "HOTELGRUPPE-NORD", name: "Hotelgruppe Nord", is_active: true });
+    renderPage();
+    await userEvent.type(await screen.findByLabelText("Mandanten-Name"), "Hotelgruppe Nord");
+    expect(screen.getByLabelText("Mandanten-Code")).toHaveValue("HOTELGRUPPE-NORD");
+    await userEvent.click(screen.getByRole("button", { name: "Mandant anlegen" }));
+    expect(create).toHaveBeenCalledWith({ code: "HOTELGRUPPE-NORD", name: "Hotelgruppe Nord" });
+  });
+
+  it("keeps a code the user typed", async () => {
+    useAuthStore.setState({ token: "t", user: { username: "admin", role: "admin", tenant_code: null } });
+    renderPage();
+    await userEvent.type(await screen.findByLabelText("Mandanten-Code"), "GRP");
+    await userEvent.type(screen.getByLabelText("Mandanten-Name"), "Hotelgruppe Nord");
+    expect(screen.getByLabelText("Mandanten-Code")).toHaveValue("GRP");
+  });
+
+  it("suggests a property code that is not taken yet", async () => {
+    useAuthStore.setState({ token: "t", user: { username: "admin", role: "admin", tenant_code: null } });
+    vi.spyOn(estate, "listTenants").mockResolvedValue({
+      items: [{ code: "GRP", name: "Gruppe", is_active: true }],
+      total: 1,
+    });
+    vi.spyOn(estate, "listProperties").mockResolvedValue({
+      items: [
+        {
+          code: "NEUBAU-HAMBURG",
+          tenant_code: "GRP",
+          name: "Neubau Hamburg",
+          time_zone: "Europe/Berlin",
+          street: null,
+          postal_code: null,
+          city: null,
+          country_code: "DE",
+        },
+      ],
+      total: 1,
+    });
+    renderPage();
+    const form = await screen.findByRole("form", { name: "Haus anlegen" });
+    await userEvent.type(within(form).getByLabelText("Name"), "Neubau Hamburg");
+    expect(within(form).getByLabelText("Code")).toHaveValue("NEUBAU-HAMBURG-2");
   });
 });

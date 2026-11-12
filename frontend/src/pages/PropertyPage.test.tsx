@@ -80,4 +80,15 @@ describe("PropertyPage", () => {
     });
     expect(devices.listDevices).toHaveBeenCalledTimes(2);
   });
+
+  it("suggests the device code from location and kind", async () => {
+    const register = vi.spyOn(devices, "registerDevice").mockResolvedValue(valve);
+    renderPage();
+    await screen.findByText("Heizventil 101");
+    await userEvent.type(screen.getByLabelText("Ort"), "101");
+    expect(screen.getByLabelText("Code")).toHaveValue("101-VALVE");
+    await userEvent.type(screen.getByLabelText("Name"), "Heizventil 101 Bad");
+    await userEvent.click(screen.getByRole("button", { name: "Gerät anlegen" }));
+    expect(register).toHaveBeenCalledWith("HAM1", expect.objectContaining({ code: "101-VALVE" }));
+  });
 });

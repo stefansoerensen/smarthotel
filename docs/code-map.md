@@ -63,6 +63,7 @@
 | `services/{auth,estate,devices}.ts` | Typed API calls |
 | `hooks/useAuthStore.ts` | Token and user (Zustand) |
 | `components/Layout.tsx`, `components/Field.tsx` | Shell, form field |
+| `utils/codes.ts` | Code suggestions (`suggestCode`, `suggestDeviceCode`) |
 | `pages/LoginPage.tsx` | Anmeldung |
 | `pages/PropertiesPage.tsx` | Häuser; Mandant und Haus anlegen (admin) |
 | `pages/PropertyPage.tsx` | Haus mit Geräteregister |

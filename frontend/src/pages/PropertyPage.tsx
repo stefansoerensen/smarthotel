@@ -6,8 +6,17 @@ import Field, { buttonClass, inputClass } from "../components/Field";
 import { getCatalogue, listDevices, registerDevice } from "../services/devices";
 import { getProperty } from "../services/estate";
 import type { ApiError, Catalogue, Device, Property } from "../types";
+import { suggestDeviceCode } from "../utils/codes";
 
-const EMPTY = { code: "", name: "", kind: "", protocol: "", location: "", address: "" };
+// ``code`` is null while it follows the suggestion and holds the user's text once they edit it.
+const EMPTY: { code: string | null; name: string; kind: string; protocol: string; location: string; address: string } = {
+  code: null,
+  name: "",
+  kind: "",
+  protocol: "",
+  location: "",
+  address: "",
+};
 
 export default function PropertyPage() {
   const { code = "" } = useParams();
@@ -40,6 +49,14 @@ export default function PropertyPage() {
     loadDevices().catch((err: ApiError) => setError(err.message));
   }, [loadDevices]);
 
+  const deviceCode =
+    form.code ??
+    suggestDeviceCode({
+      location: form.location,
+      kind: form.kind,
+      name: form.name,
+      taken: devices.map((d) => d.code),
+    });
   const labelOf = (kind: string) => catalogue?.kinds.find((k) => k.kind === kind)?.label ?? kind;
   const selectedIsSafety = catalogue?.kinds.find((k) => k.kind === form.kind)?.safety ?? false;
 
@@ -48,7 +65,7 @@ export default function PropertyPage() {
     setError(null);
     try {
       await registerDevice(code, {
-        code: form.code,
+        code: deviceCode,
         name: form.name,
         kind: form.kind,
         protocol: form.protocol,
@@ -134,7 +151,7 @@ export default function PropertyPage() {
 
       <form onSubmit={submit} className="grid grid-cols-4 items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
         <Field label="Code">
-          <input className={inputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+          <input className={inputClass} value={deviceCode} onChange={(e) => setForm({ ...form, code: e.target.value || null })} />
         </Field>
         <Field label="Name">
           <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -167,7 +184,7 @@ export default function PropertyPage() {
         <p className="text-xs text-ink/60">
           {selectedIsSafety ? "Sicherheitsgerät: wird nur gelesen, nie gesteuert." : ""}
         </p>
-        <button type="submit" className={buttonClass} disabled={!form.code || !form.name}>
+        <button type="submit" className={buttonClass} disabled={!deviceCode || !form.name}>
           Gerät anlegen
         </button>
       </form>

@@ -5,14 +5,25 @@ import Field, { buttonClass, inputClass } from "../components/Field";
 import { useAuthStore } from "../hooks/useAuthStore";
 import { createProperty, createTenant, listProperties, listTenants } from "../services/estate";
 import type { ApiError, Property, Tenant } from "../types";
+import { suggestCode } from "../utils/codes";
 
 export default function PropertiesPage() {
   const isAdmin = useAuthStore((s) => s.user?.role === "admin");
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ tenant_code: "", code: "", name: "", city: "" });
-  const [tenantForm, setTenantForm] = useState({ code: "", name: "" });
+  // A code is null while it follows the suggestion and holds the user's text once they edit it.
+  const [form, setForm] = useState<{ tenant_code: string; code: string | null; name: string; city: string }>({
+    tenant_code: "",
+    code: null,
+    name: "",
+    city: "",
+  });
+  const [tenantForm, setTenantForm] = useState<{ code: string | null; name: string }>({ code: null, name: "" });
+  const tenantCode =
+    tenantForm.code ?? suggestCode(tenantForm.name, { maxLength: 20, taken: tenants.map((t) => t.code) });
+  const propertyCode =
+    form.code ?? suggestCode(form.name, { maxLength: 20, taken: properties.map((p) => p.code) });
 
   const load = useCallback(async () => {
     const [props, tens] = await Promise.all([listProperties(), listTenants()]);
@@ -29,8 +40,13 @@ export default function PropertiesPage() {
     event.preventDefault();
     setError(null);
     try {
-      await createProperty({ ...form, city: form.city || undefined });
-      setForm((f) => ({ ...f, code: "", name: "", city: "" }));
+      await createProperty({
+        tenant_code: form.tenant_code,
+        code: propertyCode,
+        name: form.name,
+        city: form.city || undefined,
+      });
+      setForm((f) => ({ ...f, code: null, name: "", city: "" }));
       await load();
     } catch (err) {
       setError((err as ApiError).message);
@@ -41,8 +57,8 @@ export default function PropertiesPage() {
     event.preventDefault();
     setError(null);
     try {
-      const tenant = await createTenant({ code: tenantForm.code, name: tenantForm.name });
-      setTenantForm({ code: "", name: "" });
+      const tenant = await createTenant({ code: tenantCode, name: tenantForm.name });
+      setTenantForm({ code: null, name: "" });
       setForm((f) => ({ ...f, tenant_code: tenant.code }));
       await load();
     } catch (err) {
@@ -77,14 +93,14 @@ export default function PropertiesPage() {
           className="grid grid-cols-5 items-end gap-3 rounded-lg bg-white p-4 shadow-sm"
         >
           <Field label="Mandanten-Code">
-            <input className={inputClass} value={tenantForm.code} onChange={(e) => setTenantForm({ ...tenantForm, code: e.target.value })} />
+            <input className={inputClass} value={tenantCode} onChange={(e) => setTenantForm({ ...tenantForm, code: e.target.value || null })} />
           </Field>
           <div className="col-span-3">
             <Field label="Mandanten-Name">
               <input className={inputClass} value={tenantForm.name} onChange={(e) => setTenantForm({ ...tenantForm, name: e.target.value })} />
             </Field>
           </div>
-          <button type="submit" className={buttonClass} disabled={!tenantForm.code || !tenantForm.name}>
+          <button type="submit" className={buttonClass} disabled={!tenantCode || !tenantForm.name}>
             Mandant anlegen
           </button>
         </form>
@@ -104,7 +120,7 @@ export default function PropertiesPage() {
             </select>
           </Field>
           <Field label="Code">
-            <input className={inputClass} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+            <input className={inputClass} value={propertyCode} onChange={(e) => setForm({ ...form, code: e.target.value || null })} />
           </Field>
           <Field label="Name">
             <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -112,7 +128,7 @@ export default function PropertiesPage() {
           <Field label="Ort">
             <input className={inputClass} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
           </Field>
-          <button type="submit" className={buttonClass} disabled={!form.tenant_code || !form.code || !form.name}>
+          <button type="submit" className={buttonClass} disabled={!form.tenant_code || !propertyCode || !form.name}>
             Haus anlegen
           </button>
         </form>
