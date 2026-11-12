@@ -52,3 +52,22 @@ PROTOCOLS: dict[str, str] = {
 def is_safety(kind: str) -> bool:
     """True for kinds the platform may read but never control."""
     return kind in SAFETY_KINDS
+
+
+# Kinds whose value is measured, never set by the platform. Safety kinds are read only as well.
+SENSOR_KINDS: frozenset[str] = frozenset(
+    {
+        "temperature_sensor",
+        "window_contact",
+        "door_contact",
+        "presence_sensor",
+        "humidity_sensor",
+        "co2_sensor",
+        "meter",
+    }
+)
+
+
+def can_write(kind: str) -> bool:
+    """True for kinds the platform may set (set points, valves, lights, blinds, locks …)."""
+    return kind not in SENSOR_KINDS and kind not in SAFETY_KINDS

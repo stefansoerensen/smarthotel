@@ -153,6 +153,22 @@ async def register_device(
     return device
 
 
+async def find_device(session: AsyncSession, prop: Property, code: str) -> Device | None:
+    """Return device ``code`` of ``prop`` or None."""
+    result = await session.execute(
+        select(Device).where(Device.property_id == prop.id, Device.code == code)
+    )
+    return result.scalar_one_or_none()
+
+
+async def device_codes(session: AsyncSession, ids: set[uuid.UUID]) -> dict[uuid.UUID, str]:
+    """Map device ids to their codes."""
+    if not ids:
+        return {}
+    result = await session.execute(select(Device.id, Device.code).where(Device.id.in_(ids)))
+    return {row.id: row.code for row in result}
+
+
 async def get_device(session: AsyncSession, prop: Property, code: str) -> Device:
     """Return device ``code`` of ``prop`` or raise NotFoundError."""
     result = await session.execute(

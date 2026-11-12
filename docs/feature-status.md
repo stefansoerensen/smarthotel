@@ -8,12 +8,12 @@ property and two devices registered, the smoke detector shown as read only.**
 | Stage | Tasks done / total | State |
 |---|---|---|
 | SB0 — Foundation | 7 / 7 | Done and verified on the deployed app. |
-| SB1 — Device model, templates, twin, room simulator | 0 | Open |
+| SB1 — Device model, templates, twin, room simulator | 3 / 5 | Backend pushed; frontend open. |
 | SB2 — Edge gateway against the simulator | 0 | Open |
 | SB3 — Coupling with the Hotel OS | 0 | Open |
 | SB4 — Energy | 0 | Open |
 
-Counts: 19 endpoints · 6 tables · 31 backend tests (+1 migration drift) · 26 frontend tests.
+Counts: 30 endpoints · 10 tables · 46 backend tests (+1 migration drift) · 26 frontend tests.
 
 ## 2. Features
 
@@ -34,6 +34,9 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Frontend: code suggestions for Mandant, Haus, Gerät | Frontend | Verified | SB0·6 | CI run 43260549510 green; 7cd6a54 deployed; tenant suggestion seen there (not submitted). |
 | Frontend: device form — Art, Ort, Protokoll, Code; name is "<Art> <Ort>" | Frontend | Verified | SB0·6 | a4dee3e deployed and seen there. Bus address only through the API until the import in SB2. |
 | Editing: rename Mandant, edit Haus (admin), edit and retire Geräte in the registry | Backend + Frontend | Verified | SB0·6 | 98c9f42 green and deployed; edit row and "Haus bearbeiten" seen there, nothing saved by the agent. Codes stay fixed. |
+| Room types with standard points | Twin | In progress | SB1·1 | Pushed; CI not read yet. |
+| Rollout, rooms, twin points, point writes | Twin | In progress | SB1·2 | Pushed; CI not read yet. |
+| Room simulator | Twin | In progress | SB1·3 | Pushed; CI not read yet. |
 | Frontend: Mandant anlegen (admin) | Frontend | Done | SB0·6 | CI run 43259030276 green; 6d9d6fa deployed, form shown to the admin there. Not yet submitted. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
@@ -66,3 +69,4 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
   with Umbenennen; Haus page has "Haus bearbeiten" (name, street, postcode, city) for admins;
   each device row can be edited (Art, Ort, Protokoll; name follows "Art Ort") and taken out of
   service after a confirmation. Codes cannot be changed.
+- 2026-11-12 — SB1 backend: room types, rollout, twin, simulator; ADR-0005.

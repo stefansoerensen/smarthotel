@@ -31,11 +31,20 @@
 platform → (nothing)            users, tenants (Mandanten), events + outbox
 estate   → platform             properties (Häuser)
 devices  → estate, platform     gateways, devices, device catalogue
+twin     → devices, estate, platform   room types, rooms, twin points, rollout, simulator
 ```
 
-Enforced by `backend/tests/architecture/test_module_boundaries.py`. Planned additions:
-`twin` (SB1: room types, rooms, data points), `edge` API surface (SB2), `integration` (SB3: the
-Hotel OS coupling — depends on everything, nothing depends on it), `energy` (SB4).
+Enforced by `backend/tests/architecture/test_module_boundaries.py`. Planned additions: `edge` API
+surface (SB2), `integration` (SB3: the Hotel OS coupling — depends on everything, nothing depends
+on it), `energy` (SB4).
+
+## Digital twin (SB1, ADR-0005)
+
+A room type is a template of data points. Rolling it out to rooms creates, per room, one device in
+the registry (`<room>-<KEY>`, location = room) and one twin point linked to it. Twin points hold the
+last value, its time and its source (`manual`, `simulator`, later `edge`). Writable points are set
+points, valves, lights and other actuators; sensors and safety kinds are read only. The simulator
+(`services/twin/simulator.py`) is a pure function advanced by `POST …/simulator/step`.
 
 ## Request flow
 
@@ -56,6 +65,8 @@ Every state change emits an event into `outbox_events` in the same transaction:
 | `property` | `created`, `changed` | property code |
 | `gateway` | `registered` | `<property>/<gateway>` |
 | `device` | `registered`, `changed`, `retired` | `<property>/<device>` |
+| `room_type` | `created`, `changed` | `<property>/<room type>` |
+| `room` | `created` | `<property>/<room>` |
 
 SB0 records events only. A worker delivering them (webhooks, the Hotel OS) arrives with SB3.
 
