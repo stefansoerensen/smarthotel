@@ -213,3 +213,6 @@ async def test_catalogue_endpoint(client: AsyncClient, admin_headers: dict[str, 
     assert "knx" in body["protocols"]
     smoke = next(k for k in body["kinds"] if k["kind"] == "smoke_detector")
     assert smoke["safety"] is True
+    assert smoke["writable"] is False
+    valve = next(k for k in body["kinds"] if k["kind"] == "valve")
+    assert valve["writable"] is True

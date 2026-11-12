@@ -71,6 +71,7 @@ class KindOut(BaseModel):
     kind: str
     label: str
     safety: bool
+    writable: bool
 
 
 class CatalogueOut(BaseModel):

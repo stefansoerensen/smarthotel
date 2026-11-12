@@ -24,7 +24,7 @@ const smoke: Device = { ...valve, code: "101-S", name: "Rauchmelder 101", kind: 
 
 function renderPage() {
   render(
-    <MemoryRouter initialEntries={["/properties/HAM1"]}>
+    <MemoryRouter initialEntries={["/properties/HAM1?tab=geraete"]}>
       <Routes>
         <Route path="/properties/:code" element={<PropertyPage />} />
       </Routes>
@@ -46,8 +46,8 @@ describe("PropertyPage", () => {
     });
     vi.spyOn(devices, "getCatalogue").mockResolvedValue({
       kinds: [
-        { kind: "valve", label: "Heizventil", safety: false },
-        { kind: "smoke_detector", label: "Rauchmelder", safety: true },
+        { kind: "valve", label: "Heizventil", safety: false, writable: true },
+        { kind: "smoke_detector", label: "Rauchmelder", safety: true, writable: false },
       ],
       protocols: { knx: "KNX/IP", bacnet: "BACnet/IP" },
     });

@@ -48,7 +48,12 @@ async def device_catalogue(_: User = Depends(get_current_user)) -> CatalogueOut:
     """Device kinds (with the safety flag) and protocols the registry accepts."""
     return CatalogueOut(
         kinds=[
-            KindOut(kind=k, label=label, safety=catalogue.is_safety(k))
+            KindOut(
+                kind=k,
+                label=label,
+                safety=catalogue.is_safety(k),
+                writable=catalogue.can_write(k),
+            )
             for k, label in catalogue.DEVICE_KINDS.items()
         ],
         protocols=dict(catalogue.PROTOCOLS),

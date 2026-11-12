@@ -81,7 +81,12 @@
 | `components/Layout.tsx`, `components/Field.tsx` | Shell, form field |
 | `components/DeviceRow.tsx` | Registry row with in-place edit and retire |
 | `components/TenantItem.tsx` | Tenant with in-place rename |
+| `components/DeviceRegistry.tsx` | Geräte tab: list, filter, register |
+| `components/RoomTypesTab.tsx` | Raumtypen tab: templates, points, rollout |
+| `components/RoomsTab.tsx`, `components/RoomTile.tsx` | Zimmer tab: twin tiles and simulator |
+| `services/twin.ts` | Room types, rooms, rollout, simulator calls |
+| `utils/rooms.ts` | `parseRoomCodes` for "101-120, 201" |
 | `utils/codes.ts` | Code suggestions (`suggestCode`, `suggestDeviceCode`) |
 | `pages/LoginPage.tsx` | Anmeldung |
 | `pages/PropertiesPage.tsx` | Häuser; Mandant und Haus anlegen (admin) |
-| `pages/PropertyPage.tsx` | Haus (bearbeiten für Admins) mit Geräteregister |
+| `pages/PropertyPage.tsx` | Haus (bearbeiten für Admins) with tabs Zimmer, Raumtypen, Geräte (`?tab=`) |
