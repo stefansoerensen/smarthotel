@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import DomainError, NotFoundError
+from app.models.twin.history import MeterReading, OccupancyPeriod
 from app.models.twin.room import Room, RoomPoint
 from app.models.twin.room_type import RoomType
 from app.services.devices import registry
@@ -242,6 +243,7 @@ async def apply_reading(
     if point.value_at is not None and measured_at <= point.value_at:
         return False
     _set(point, value, now=measured_at, source="edge")
+    _record_meter(session, point, value, measured_at, "edge")
     if point.desired is not None and abs(point.desired - value) < 0.01:
         point.desired = None
         point.desired_at = None
@@ -254,6 +256,22 @@ async def _point(session: AsyncSession, room: Room, key: str) -> RoomPoint:
     if point is None:
         raise NotFoundError("room_point", key)
     return point
+
+
+def _record_meter(
+    session: AsyncSession, point: RoomPoint, value: float, at: datetime, source: str
+) -> None:
+    """Keep the history of meter points; other points keep only their last value."""
+    if point.kind == "meter":
+        session.add(
+            MeterReading(
+                room_point_id=point.id,
+                room_id=point.room_id,
+                value=value,
+                measured_at=at,
+                source=source,
+            )
+        )
 
 
 def _set(point: RoomPoint, value: float, *, now: datetime, source: str) -> None:
@@ -322,6 +340,7 @@ async def simulate_step(
             if key in ("setpoint", "window", "presence") and point.value is not None:
                 continue
             _set(point, new, now=now, source="simulator")
+            _record_meter(session, point, new, now, "simulator")
         simulated += 1
     await session.flush()
     return simulated
@@ -347,6 +366,7 @@ async def apply_mode(
     Returns (mode changed, set point written, whether that point sits behind a gateway). The set
     point is written only on a change, so a guest's own adjustment stays until the next change.
     """
+    await _track_occupancy(session, room, occupancy, reservation_code, now)
     room.occupancy = occupancy
     room.reservation_code = reservation_code
     if room.mode == mode:
@@ -371,3 +391,87 @@ async def apply_mode(
         session, room, "setpoint", setpoint, now=now, source="hotel_os"
     )
     return True, point, behind_gateway
+
+
+async def _track_occupancy(
+    session: AsyncSession,
+    room: Room,
+    occupancy: str,
+    reservation_code: str | None,
+    now: datetime,
+) -> None:
+    """Open a period when a guest is in house, close it when the room is no longer occupied."""
+    result = await session.execute(
+        select(OccupancyPeriod).where(
+            OccupancyPeriod.room_id == room.id, OccupancyPeriod.ended_at.is_(None)
+        )
+    )
+    open_period = result.scalars().first()
+    if open_period is not None and (
+        occupancy != "occupied" or open_period.reservation_code != reservation_code
+    ):
+        open_period.ended_at = now
+        open_period = None
+    if occupancy == "occupied" and open_period is None:
+        session.add(
+            OccupancyPeriod(room_id=room.id, reservation_code=reservation_code, started_at=now)
+        )
+    await session.flush()
+
+
+async def meter_history(
+    session: AsyncSession, prop: Property, start: datetime, end: datetime
+) -> dict:
+    """Room code → meter readings ``(measured_at, value)`` in [start, end), plus the last before."""
+    room_list = await list_rooms(session, prop)
+    codes = {r.id: r.code for r in room_list}
+    if not codes:
+        return {}
+    in_range = await session.execute(
+        select(MeterReading.room_id, MeterReading.measured_at, MeterReading.value)
+        .where(
+            MeterReading.room_id.in_(codes),
+            MeterReading.measured_at >= start,
+            MeterReading.measured_at < end,
+        )
+        .order_by(MeterReading.measured_at)
+    )
+    history: dict = {code: [] for code in codes.values()}
+    for room_id in codes:
+        before = await session.execute(
+            select(MeterReading.measured_at, MeterReading.value)
+            .where(MeterReading.room_id == room_id, MeterReading.measured_at < start)
+            .order_by(MeterReading.measured_at.desc())
+            .limit(1)
+        )
+        row = before.first()
+        if row is not None:
+            history[codes[room_id]].append((row.measured_at, row.value))
+    for row in in_range:
+        history[codes[row.room_id]].append((row.measured_at, row.value))
+    return history
+
+
+async def occupancy_history(
+    session: AsyncSession, prop: Property, start: datetime, end: datetime
+) -> dict:
+    """Room code → occupancy periods ``(started_at, ended_at, reservation)`` overlapping the range."""
+    room_list = await list_rooms(session, prop)
+    codes = {r.id: r.code for r in room_list}
+    if not codes:
+        return {}
+    result = await session.execute(
+        select(OccupancyPeriod)
+        .where(
+            OccupancyPeriod.room_id.in_(codes),
+            OccupancyPeriod.started_at < end,
+            (OccupancyPeriod.ended_at.is_(None)) | (OccupancyPeriod.ended_at > start),
+        )
+        .order_by(OccupancyPeriod.started_at)
+    )
+    history: dict = {code: [] for code in codes.values()}
+    for period in result.scalars():
+        history[codes[period.room_id]].append(
+            (period.started_at, period.ended_at, period.reservation_code)
+        )
+    return history

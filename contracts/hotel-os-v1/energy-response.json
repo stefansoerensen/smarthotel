@@ -1,0 +1,13 @@
+{
+  "property_code": "HAM",
+  "date": "2026-11-12",
+  "kwh_total": 5.4,
+  "occupied_nights": 1,
+  "kwh_per_occupied_night": 5.0,
+  "price_eur_per_kwh": "0.1200",
+  "cost_eur": "0.65",
+  "by_unit": [
+    {"unit_name": "101", "kwh": 5.0, "occupied": true, "reservation_code": "R1", "cost_eur": "0.60"},
+    {"unit_name": "102", "kwh": 0.4, "occupied": false, "reservation_code": null, "cost_eur": "0.05"}
+  ]
+}

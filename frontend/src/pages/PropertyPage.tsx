@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import DeviceRegistry from "../components/DeviceRegistry";
+import EnergyTab from "../components/EnergyTab";
 import GatewaysPanel from "../components/GatewaysPanel";
 import HotelOsTab from "../components/HotelOsTab";
 import Field, { buttonClass, inputClass } from "../components/Field";
@@ -16,6 +17,7 @@ const TABS = [
   { id: "zimmer", label: "Zimmer" },
   { id: "raumtypen", label: "Raumtypen" },
   { id: "geraete", label: "Geräte" },
+  { id: "energie", label: "Energie" },
   { id: "hotel-os", label: "Hotel OS" },
 ] as const;
 
@@ -156,6 +158,7 @@ export default function PropertyPage() {
           <DeviceRegistry propertyCode={code} catalogue={catalogue} />
         </>
       )}
+      {tab === "energie" && <EnergyTab propertyCode={code} />}
       {tab === "hotel-os" && <HotelOsTab propertyCode={code} />}
       {error && (
         <p role="alert" className="text-burgundy">

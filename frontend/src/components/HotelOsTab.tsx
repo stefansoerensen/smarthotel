@@ -15,7 +15,7 @@ const time = new Intl.DateTimeFormat("de-DE", { dateStyle: "short", timeStyle: "
 /** Coupling with the Hotel OS: link, sync and the faults the front desk sees (ADR-0007). */
 export default function HotelOsTab({ propertyCode }: HotelOsTabProps) {
   const [link, setLink] = useState<HotelOsLink | null>(null);
-  const [draft, setDraft] = useState({ code: "", comfort: "21", eco: "17", enabled: true });
+  const [draft, setDraft] = useState({ code: "", comfort: "21", eco: "17", price: "", enabled: true });
   const [faults, setFaults] = useState<Fault[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +29,7 @@ export default function HotelOsTab({ propertyCode }: HotelOsTabProps) {
       code: l.hotel_os_property_code ?? "",
       comfort: String(l.comfort_setpoint),
       eco: String(l.eco_setpoint),
+      price: l.energy_price_eur_per_kwh?.replace(".", ",") ?? "",
       enabled: l.hotel_os_property_code ? l.enabled : true,
     });
   }, [propertyCode]);
@@ -47,6 +48,7 @@ export default function HotelOsTab({ propertyCode }: HotelOsTabProps) {
           enabled: draft.enabled,
           comfort_setpoint: Number(draft.comfort.replace(",", ".")),
           eco_setpoint: Number(draft.eco.replace(",", ".")),
+          energy_price_eur_per_kwh: draft.price.trim() ? draft.price.trim().replace(",", ".") : null,
         }),
       );
     } catch (err) {
@@ -81,7 +83,7 @@ export default function HotelOsTab({ propertyCode }: HotelOsTabProps) {
           Railway. Die Verknüpfung lässt sich trotzdem schon speichern.
         </p>
       )}
-      <form aria-label="Verknüpfung" onSubmit={save} className="grid grid-cols-5 items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
+      <form aria-label="Verknüpfung" onSubmit={save} className="grid grid-cols-6 items-end gap-3 rounded-lg bg-white p-4 shadow-sm">
         <Field label="Hauscode im Hotel OS">
           <input className={inputClass} value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} />
         </Field>
@@ -91,6 +93,9 @@ export default function HotelOsTab({ propertyCode }: HotelOsTabProps) {
         <Field label="Eco °C">
           <input className={inputClass} value={draft.eco} onChange={(e) => setDraft({ ...draft, eco: e.target.value })} />
         </Field>
+        <Field label="€ je kWh">
+          <input className={inputClass} value={draft.price} placeholder="optional" onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
+        </Field>
         <label className="flex items-center gap-2 text-xs text-ink/70">
           <input type="checkbox" checked={draft.enabled} onChange={(e) => setDraft({ ...draft, enabled: e.target.checked })} />
           aktiv
@@ -98,7 +103,7 @@ export default function HotelOsTab({ propertyCode }: HotelOsTabProps) {
         <button type="submit" className={buttonClass} disabled={!draft.code.trim()}>
           Speichern
         </button>
-        <p className="col-span-5 text-xs text-ink/60">
+        <p className="col-span-6 text-xs text-ink/60">
           Belegt → Komfort, Anreise heute → Vorheizen auf Komfort, frei → Eco. Zimmer und Einheiten im Hotel OS werden über den Namen
           zugeordnet (101 = 101). Der Sollwert wird nur beim Wechsel gesetzt; was der Gast verstellt, bleibt bis zum nächsten Wechsel.
         </p>

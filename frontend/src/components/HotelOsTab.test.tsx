@@ -9,6 +9,7 @@ const link = {
   enabled: false,
   comfort_setpoint: 21,
   eco_setpoint: 17,
+  energy_price_eur_per_kwh: null,
   last_sync_at: null,
   last_sync_error: null,
   configured: true,
@@ -35,6 +36,7 @@ describe("HotelOsTab", () => {
       enabled: true,
       comfort_setpoint: 21,
       eco_setpoint: 17,
+      energy_price_eur_per_kwh: null,
     });
     await userEvent.click(await screen.findByRole("button", { name: "Jetzt abgleichen" }));
     expect(sync).toHaveBeenCalledWith("HAM1");

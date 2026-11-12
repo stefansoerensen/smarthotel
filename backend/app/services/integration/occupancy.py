@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from sqlalchemy import select
@@ -55,6 +56,7 @@ async def save_link(
     enabled: bool,
     comfort_setpoint: float,
     eco_setpoint: float,
+    energy_price_eur_per_kwh: Decimal | None = None,
 ) -> HotelOsLink:
     """Create or change the property's link."""
     if eco_setpoint > comfort_setpoint:
@@ -67,6 +69,7 @@ async def save_link(
     link.enabled = enabled
     link.comfort_setpoint = comfort_setpoint
     link.eco_setpoint = eco_setpoint
+    link.energy_price_eur_per_kwh = energy_price_eur_per_kwh
     await session.flush()
     return link
 

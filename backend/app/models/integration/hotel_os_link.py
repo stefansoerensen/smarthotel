@@ -2,8 +2,9 @@
 
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -22,5 +23,7 @@ class HotelOsLink(TimestampMixin, Base):
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     comfort_setpoint: Mapped[float] = mapped_column(Float, nullable=False, default=21.0)
     eco_setpoint: Mapped[float] = mapped_column(Float, nullable=False, default=17.0)
+    # Price per kWh of heat/electricity for the live P&L (d31); money is Decimal, never float.
+    energy_price_eur_per_kwh: Mapped[Decimal | None] = mapped_column(Numeric(8, 4), nullable=True)
     last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_sync_error: Mapped[str | None] = mapped_column(String(500), nullable=True)

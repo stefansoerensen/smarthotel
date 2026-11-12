@@ -195,6 +195,7 @@ export interface HotelOsLink {
   enabled: boolean;
   comfort_setpoint: number;
   eco_setpoint: number;
+  energy_price_eur_per_kwh: string | null;
   last_sync_at: string | null;
   last_sync_error: string | null;
   configured: boolean;
@@ -205,6 +206,7 @@ export interface HotelOsLinkInput {
   enabled: boolean;
   comfort_setpoint: number;
   eco_setpoint: number;
+  energy_price_eur_per_kwh?: string | null;
 }
 
 export interface SyncResult {
@@ -218,4 +220,36 @@ export interface Fault {
   message: string;
   unit_name: string | null;
   since: string | null;
+}
+
+export interface EnergyBucket {
+  start: string;
+  kwh: number;
+}
+
+export interface EnergySeries {
+  resolution: "15min" | "day";
+  buckets: EnergyBucket[];
+  rooms: { room_code: string; kwh: number }[];
+  total_kwh: number;
+}
+
+export interface EnergyNight {
+  date: string;
+  room_code: string;
+  occupied: boolean;
+  reservation_code: string | null;
+  kwh: number;
+}
+
+export interface EnergyNights {
+  nights: EnergyNight[];
+  summary: {
+    occupied_nights: number;
+    kwh_occupied: number;
+    kwh_vacant: number;
+    kwh_per_occupied_night: number | null;
+    price_eur_per_kwh: string | null;
+    cost_per_occupied_night_eur: string | null;
+  };
 }

@@ -39,7 +39,11 @@
 | `services/integration/hotel_os.py` | `Stay`, `HttpHotelOs` client of the Hotel OS native API |
 | `services/integration/occupancy.py` | Link, occupancy by unit, sync → room modes and set points |
 | `services/integration/faults.py` | Faults for the inbox |
-| `api/native/hotel_os.py` | Link, sync, faults, webhook, inbox endpoint |
+| `api/native/hotel_os.py` | Link, sync, faults, webhook, inbox and energy endpoints for the Hotel OS |
+| `alembic/versions/0005_sb4_energy.py` | `meter_readings`, `occupancy_periods`, energy price on the link |
+| `models/twin/history.py` | `MeterReading`, `OccupancyPeriod` |
+| `services/energy/aggregate.py` | Buckets, local days, nights, cost |
+| `api/native/energy.py` | Energy series and nights |
 | `seed/bootstrap.py` | Pre-deploy: administrator from env, dev users outside production |
 | `alembic/versions/0001_sb0_foundation.py` | All SB0 tables |
 
@@ -83,12 +87,15 @@
 | GET | `/properties/{code}/faults` | signed in (scoped) |
 | POST | `/integrations/hotel-os/webhook?token=` | Hotel OS, shared secret |
 | GET | `/integrations/hotel-os/v1/faults?property_code=` | Hotel OS inbox, `X-Api-Key` |
+| GET | `/integrations/hotel-os/v1/energy?property_code=&date=` | Hotel OS live P&L, `X-Api-Key` |
+| GET | `/properties/{code}/energy?from&to&resolution&room` | signed in (scoped) |
+| GET | `/properties/{code}/energy/nights?from&to` | signed in (scoped) |
 | POST | `/edge/v1/commands/{id}/ack` | gateway token |
 
 ## Tables (schema `smarthotel`)
 
 `users`, `tenants`, `outbox_events`, `properties`, `gateways` (unique property+code),
-`devices` (unique property+code), `room_types`, `room_type_points`, `rooms`, `room_points`, `commands`, `hotel_os_links`.
+`devices` (unique property+code), `room_types`, `room_type_points`, `rooms`, `room_points`, `commands`, `hotel_os_links`, `meter_readings`, `occupancy_periods`.
 
 ## Frontend (`frontend/src/`)
 
@@ -107,7 +114,8 @@
 | `services/twin.ts` | Room types, rooms, rollout, simulator calls |
 | `utils/rooms.ts` | `parseRoomCodes` for "101-120, 201" |
 | `components/GatewaysPanel.tsx` | Gateways: status, register, token shown once |
-| `components/HotelOsTab.tsx`, `services/hotelOs.ts` | Hotel OS tab: link, sync, faults |
+| `components/HotelOsTab.tsx`, `services/hotelOs.ts` | Hotel OS tab: link, price, sync, faults |
+| `components/EnergyTab.tsx`, `services/energy.ts` | Energie tab: totals, per night, bars per day |
 
 ## Edge (`edge/edge_gateway/`)
 

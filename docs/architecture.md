@@ -33,11 +33,12 @@ estate   → platform             properties (Häuser)
 devices  → estate, platform     gateways, devices, device catalogue
 twin     → devices, estate, platform   room types, rooms, twin points, rollout, simulator
 edge     → twin, devices, estate, platform   commands to gateways
-integration → edge, twin, devices, estate, platform   Hotel OS link, occupancy sync, faults
+energy   → twin, estate, platform   consumption per interval and per night
+integration → energy, edge, twin, devices, estate, platform   Hotel OS link, occupancy, faults
 ```
 
 Enforced by `backend/tests/architecture/test_module_boundaries.py`. Nothing depends on
-`integration`. Planned addition: `energy` (SB4).
+`integration`.
 
 ## Digital twin (SB1, ADR-0005)
 
@@ -110,3 +111,10 @@ Hotel OS (pms-clone)                         Smart Building
 A mode change emits `room/mode_changed` and writes the mode's set point (a command behind a
 gateway). Faults: occupied or arriving room 2 K below its set point (`Today`), gateway offline
 (`Today`), device fault (`Attention`).
+
+## Energy (SB4, ADR-0008)
+
+Meter points keep every value in `meter_readings`; the Hotel OS sync keeps `occupancy_periods`.
+Consumption = positive deltas attributed to the interval of the later reading; days and 15-minute
+buckets in local time; a night runs 12:00–12:00 and is occupied when a stay covers its midnight.
+The Hotel OS live P&L reads one night per call from `/api/integrations/hotel-os/v1/energy`.

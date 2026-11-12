@@ -1,7 +1,8 @@
 """Coupling with the Hotel OS: link, sync, webhook, faults (ADR-0007)."""
 
 import hmac
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
@@ -15,6 +16,7 @@ from app.core.config import settings
 from app.core.errors import DomainError, NotFoundError
 from app.models.estate.property import Property
 from app.models.integration.hotel_os_link import HotelOsLink
+from app.services.energy import aggregate
 from app.services.integration import faults as faults_service
 from app.services.integration import occupancy
 from app.services.integration.hotel_os import HotelOs, HttpHotelOs
@@ -46,6 +48,7 @@ class LinkIn(BaseModel):
     enabled: bool = True
     comfort_setpoint: float = Field(default=21.0, ge=15, le=26)
     eco_setpoint: float = Field(default=17.0, ge=7, le=24)
+    energy_price_eur_per_kwh: Decimal | None = Field(default=None, ge=0, le=10, decimal_places=4)
 
 
 class LinkOut(BaseModel):
@@ -55,6 +58,7 @@ class LinkOut(BaseModel):
     enabled: bool
     comfort_setpoint: float
     eco_setpoint: float
+    energy_price_eur_per_kwh: str | None
     last_sync_at: datetime | None
     last_sync_error: str | None
     configured: bool
@@ -95,6 +99,7 @@ def _link_out(link: HotelOsLink | None) -> LinkOut:
             enabled=False,
             comfort_setpoint=21.0,
             eco_setpoint=17.0,
+            energy_price_eur_per_kwh=None,
             last_sync_at=None,
             last_sync_error=None,
             configured=_configured(),
@@ -104,6 +109,11 @@ def _link_out(link: HotelOsLink | None) -> LinkOut:
         enabled=link.enabled,
         comfort_setpoint=link.comfort_setpoint,
         eco_setpoint=link.eco_setpoint,
+        energy_price_eur_per_kwh=(
+            str(link.energy_price_eur_per_kwh)
+            if link.energy_price_eur_per_kwh is not None
+            else None
+        ),
         last_sync_at=link.last_sync_at,
         last_sync_error=link.last_sync_error,
         configured=_configured(),
@@ -234,3 +244,69 @@ async def inbox_faults(
                 FaultOut(**f.__dict__) for f in await faults_service.faults(db, prop, now=now)
             )
     return FaultsOut(property_code=property_code, items=items)
+
+
+class UnitEnergy(BaseModel):
+    """One unit's night."""
+
+    unit_name: str
+    kwh: float
+    occupied: bool
+    reservation_code: str | None
+    cost_eur: str | None
+
+
+class EnergyOut(BaseModel):
+    """Energy of one night for the Hotel OS live P&L (hub d31)."""
+
+    property_code: str
+    date: date
+    kwh_total: float
+    occupied_nights: int
+    kwh_per_occupied_night: float | None
+    price_eur_per_kwh: str | None
+    cost_eur: str | None
+    by_unit: list[UnitEnergy]
+
+
+@router.get("/integrations/hotel-os/v1/energy", response_model=EnergyOut)
+async def energy_for_pl(
+    property_code: str,
+    date_: date = Query(alias="date"),
+    x_api_key: str = Header(""),
+    db: AsyncSession = Depends(get_db),
+) -> EnergyOut:
+    """kWh and cost of one night (12:00–12:00 local) per unit, for the Hotel OS live P&L."""
+    if not _matches(x_api_key, settings.hotel_os_inbox_key):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid key")
+    result = await db.execute(
+        select(HotelOsLink).where(HotelOsLink.hotel_os_property_code == property_code)
+    )
+    link = result.scalars().first()
+    if link is None:
+        raise NotFoundError("hotel_os_link", property_code)
+    prop = await db.get(Property, link.property_id)
+    items = await aggregate.nights(db, prop, first=date_, last=date_)
+    price = link.energy_price_eur_per_kwh
+    occupied = [n for n in items if n.occupied]
+    total = round(sum(n.kwh for n in items), 3)
+    per_night = round(sum(n.kwh for n in occupied) / len(occupied), 3) if occupied else None
+    return EnergyOut(
+        property_code=property_code,
+        date=date_,
+        kwh_total=total,
+        occupied_nights=len(occupied),
+        kwh_per_occupied_night=per_night,
+        price_eur_per_kwh=str(price) if price is not None else None,
+        cost_eur=aggregate.money(total, price),
+        by_unit=[
+            UnitEnergy(
+                unit_name=n.room_code,
+                kwh=n.kwh,
+                occupied=n.occupied,
+                reservation_code=n.reservation_code,
+                cost_eur=aggregate.money(n.kwh, price),
+            )
+            for n in items
+        ],
+    )
