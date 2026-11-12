@@ -54,5 +54,5 @@ device health — tested against a simulated bus, never against real hardware (b
 - [x] Zimmer tiles show "ausstehend" for desired set points and hide simulator toggles for edge rooms.
 
 ### Task 4: Verification
-- [ ] Green CI; on Railway the edge API answers 401 without a token. Running an edge container
+- [x] Green CI; on Railway the edge API answers 401 without a token. Running an edge container
   against Railway is a human step (deployment.md).

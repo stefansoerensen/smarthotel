@@ -45,5 +45,5 @@ offline, device fault) appear in the Hotel OS inbox.
 - [x] Room tiles show occupancy and mode.
 
 ### Task 5: Verification
-- [ ] Green CI; on Railway the faults endpoint answers 401 without key. Linking a real pms-clone
+- [x] Green CI; on Railway the faults endpoint answers 401 without key. Linking a real pms-clone
   deployment needs the Railway variables and the pms-clone side (hub task).

@@ -28,4 +28,4 @@ night and room, as an input for the live P&L of the Hotel OS (hub d31).
   price per kWh in the Hotel OS tab.
 
 ### Task 5: Verification
-- [ ] Green CI; the Energie tab on Railway.
+- [x] Green CI; the Energie tab on Railway (endpoints and bundle checked read only).

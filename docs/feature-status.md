@@ -1,7 +1,9 @@
 # Feature status
 
-**As of 2026-11-12: SB0 is done — green in CI, deployed on Railway, and used there: a tenant, a
-property and two devices registered, the smoke detector shown as read only.**
+**As of 2026-11-12: SB0–SB4 are built, green in CI and deployed on Railway (05cd509). On Railway
+every new endpoint was checked read only (no data created by the agent). Open: a rollout and a
+simulator run on Railway (needs a person, writes data), the pms-clone side of the coupling (hub
+b57), Railway variables for the coupling and an edge container (hub b58).**
 
 ## 1. Snapshot
 
@@ -9,9 +11,9 @@ property and two devices registered, the smoke detector shown as read only.**
 |---|---|---|
 | SB0 — Foundation | 7 / 7 | Done and verified on the deployed app. |
 | SB1 — Device model, templates, twin, room simulator | 4 / 5 | Green in CI, deployed. Rollout on Railway still to be done once by Stefan. |
-| SB2 — Edge gateway against the simulator | 3 / 4 | Green in CI (43c9ac0), deployed. No gateway container runs yet. |
-| SB3 — Coupling with the Hotel OS | 4 / 5 | Green in CI (461c90f), deployed. Not linked to a real pms-clone yet; pms-clone side open (hub). |
-| SB4 — Energy | 4 / 5 | Pushed; CI not read yet. |
+| SB2 — Edge gateway against the simulator | 4 / 4 | Green in CI, deployed; edge API answers 401 without token. No gateway container runs yet (b58). |
+| SB3 — Coupling with the Hotel OS | 5 / 5 | Green in CI, deployed; webhook and inbox endpoint answer 401 without secret. Not linked to pms-clone yet (b57, b58). |
+| SB4 — Energy | 5 / 5 | Green in CI (05cd509), deployed; energy endpoints answer on Railway. |
 
 Counts: 46 endpoints · 14 tables · 71 backend tests (+2 migration) · 14 edge tests · 50 frontend tests.
 
@@ -45,9 +47,9 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Hotel OS webhook | Integration | Done | SB3·2 | CI green (461c90f). |
 | Faults for the Hotel OS inbox | Integration | Done | SB3·3 | CI green (461c90f). pms-clone does not read it yet. |
 | Frontend: Hotel OS tab, occupancy on room tiles | Frontend | Done | SB3·4 | CI green (461c90f). |
-| Meter history, occupancy periods, energy per 15 min / day / night | Energy | In progress | SB4·1–3 | Pushed; CI not read yet. |
-| Energy for the Hotel OS live P&L | Integration | In progress | SB4·3 | Pushed; CI not read yet. pms-clone does not read it yet. |
-| Frontend: Energie tab, price per kWh | Frontend | In progress | SB4·4 | Pushed; CI not read yet. |
+| Meter history, occupancy periods, energy per 15 min / day / night | Energy | Done | SB4·1–3 | CI green (05cd509), deployed. |
+| Energy for the Hotel OS live P&L | Integration | Done | SB4·3 | CI green (05cd509), deployed. pms-clone does not read it yet. |
+| Frontend: Energie tab, price per kWh | Frontend | Done | SB4·4 | CI green (05cd509), deployed. |
 | Frontend: Mandant anlegen (admin) | Frontend | Done | SB0·6 | CI run 43259030276 green; 6d9d6fa deployed, form shown to the admin there. Not yet submitted. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
@@ -90,3 +92,6 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
   ADR-0007 and `contracts/hotel-os-v1/`. Presence toggle relabelled anwesend/abwesend.
 - 2026-11-12 — SB4: meter history, occupancy periods, energy series and nights, Hotel OS energy
   endpoint, Energie tab; ADR-0008.
+- 2026-11-12 — Railway (05cd509): health, gateways, commands, hotel-os, faults, energy, nights answer
+  200; `/edge/v1/hello`, webhook and inbox faults answer 401 without secret; unknown `/edge` path is JSON
+  404; the new tabs are in the served bundle.
