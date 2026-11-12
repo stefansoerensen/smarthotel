@@ -1,14 +1,13 @@
 # Feature status
 
-**As of 2026-11-12: SB0 is on `main` and green in CI (run 43251629132, commit 0065e8e). Deployed on
-Railway; health, JSON 404, 401 without token and the SPA checked there. Login and the registry
-still have to be used once on the deployed app.**
+**As of 2026-11-12: SB0 is done — green in CI, deployed on Railway, and used there: a tenant, a
+property and two devices registered, the smoke detector shown as read only.**
 
 ## 1. Snapshot
 
 | Stage | Tasks done / total | State |
 |---|---|---|
-| SB0 — Foundation | 6 / 7 | Green in CI, deployed. Login and registry not yet used on the deployed app. |
+| SB0 — Foundation | 7 / 7 | Done and verified on the deployed app. |
 | SB1 — Device model, templates, twin, room simulator | 0 | Open |
 | SB2 — Edge gateway against the simulator | 0 | Open |
 | SB3 — Coupling with the Hotel OS | 0 | Open |
@@ -25,15 +24,15 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 |---|---|---|---|---|
 | Health check, JSON 404 under `/api` | Platform | Verified | SB0·2 | |
 | Settings: URL normalisation, production secret guard | Platform | Done | SB0·2 | |
-| Login, current user, login rate limit | Platform | Done | SB0·3 | Roles `admin`, `operator`. |
-| Tenants (Mandanten) | Platform | Done | SB0·4 | Admins create; operators see their own. |
-| Properties (Häuser) | Estate | Done | SB0·4 | Unique code, time zone checked, tenant-scoped reads. |
+| Login, current user, login rate limit | Platform | Verified | SB0·3 | Roles `admin`, `operator`. |
+| Tenants (Mandanten) | Platform | Verified | SB0·4 | Admins create; operators see their own. |
+| Properties (Häuser) | Estate | Verified | SB0·4 | Unique code, time zone checked, tenant-scoped reads. |
 | Gateways in the registry | Devices | Done | SB0·5 | Status `provisioned` until SB2 reports. |
-| Device registry with catalogue and filters | Devices | Done | SB0·5 | Kinds, protocols, location, retire instead of delete. |
-| Safety devices read only | Devices | Done | SB0·5 | ADR-0003. |
-| Frontend: login, Häuser, Geräteregister | Frontend | Done | SB0·6 | |
+| Device registry with catalogue and filters | Devices | Verified | SB0·5 | Kinds, protocols, location, retire instead of delete. |
+| Safety devices read only | Devices | Verified | SB0·5 | ADR-0003. |
+| Frontend: login, Häuser, Geräteregister | Frontend | Verified | SB0·6 | |
 | Frontend: code suggestions for Mandant, Haus, Gerät | Frontend | Verified | SB0·6 | CI run 43260549510 green; 7cd6a54 deployed; tenant suggestion seen there (not submitted). |
-| Frontend: device form — Art, Ort, Protokoll, Code; name is "<Art> <Ort>" | Frontend | In progress | SB0·6 | Pushed; CI and deployed app not checked yet. Bus address only through the API until the import in SB2. |
+| Frontend: device form — Art, Ort, Protokoll, Code; name is "<Art> <Ort>" | Frontend | Verified | SB0·6 | a4dee3e deployed and seen there. Bus address only through the API until the import in SB2. |
 | Frontend: Mandant anlegen (admin) | Frontend | Done | SB0·6 | CI run 43259030276 green; 6d9d6fa deployed, form shown to the admin there. Not yet submitted. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
@@ -59,3 +58,6 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 - 2026-11-12 — Frontend: device form reduced to Art, Ort ("Zimmernummer, Flur o. ä."), Protokoll and
   Code; the name is always "<Art> <Ort>"; no address fields, the postal address belongs to the Haus
   and the bus address comes with the import from the building (SB2).
+- 2026-11-12 — SB0 accepted on the deployed app: tenant, property and two devices registered by
+  Stefan; the smoke detector shows "nur lesen". Device names typed before a4dee3e keep their
+  free-text names.
