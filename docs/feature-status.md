@@ -1,9 +1,8 @@
 # Feature status
 
-**As of 2026-11-12: SB0–SB4 are built, green in CI and deployed on Railway (05cd509). On Railway
-every new endpoint was checked read only (no data created by the agent). Open: a rollout and a
-simulator run on Railway (needs a person, writes data), the pms-clone side of the coupling (hub
-b57), Railway variables for the coupling and an edge container (hub b58).**
+**As of 2026-11-13: SB0–SB5 are built, green in CI and deployed on Railway (e28ce84); the edge
+container runs on Railway. Open: the pms-clone side of the coupling (hub b57), the HOTEL_OS_*
+variables (b58), real bus protocols (after b32/a16/b08).**
 
 ## 1. Snapshot
 
@@ -14,7 +13,7 @@ b57), Railway variables for the coupling and an edge container (hub b58).**
 | SB2 — Edge gateway against the simulator | 4 / 4 | Verified: the edge container runs on Railway (Stefan, 2026-11-13, after d8cd8af). |
 | SB3 — Coupling with the Hotel OS | 5 / 5 | Green in CI, deployed; webhook and inbox endpoint answer 401 without secret. Not linked to pms-clone yet (b57, b58). |
 | SB4 — Energy | 5 / 5 | Green in CI (05cd509), deployed; energy endpoints answer on Railway. |
-| SB5 — Operations | 4 / 5 | Pushed; CI not read yet. |
+| SB5 — Operations | 4 / 5 | Green in CI (e28ce84), deployed; on Railway only health, 401 without login and the bundle checked. |
 
 Counts: 52 endpoints · 14 tables · 91 backend tests (+2 migration) · 20 edge tests · 56 frontend tests.
 
@@ -51,10 +50,10 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Meter history, occupancy periods, energy per 15 min / day / night | Energy | Done | SB4·1–3 | CI green (05cd509), deployed. |
 | Energy for the Hotel OS live P&L | Integration | Done | SB4·3 | CI green (05cd509), deployed. pms-clone does not read it yet. |
 | Frontend: Energie tab, price per kWh | Frontend | Done | SB4·4 | CI green (05cd509), deployed. |
-| Users: create, reset password, deactivate; own password | Platform + Frontend | In progress | SB5·1 | Pushed; CI not read yet. |
-| Bus address import (CSV, ETS export) | Devices + Frontend | In progress | SB5·2 | Pushed; CI not read yet. |
-| Periodic Hotel OS sync in the API process | Integration | In progress | SB5·3 | Pushed; CI not read yet. Only acts once HOTEL_OS_* are set. |
-| Overview per property, last commands | Integration + Frontend | In progress | SB5·4 | Pushed; CI not read yet. |
+| Users: create, reset password, deactivate; own password | Platform + Frontend | Done | SB5·1 | CI green (e28ce84), deployed. |
+| Bus address import (CSV, ETS export) | Devices + Frontend | Done | SB5·2 | CI green (e28ce84), deployed. |
+| Periodic Hotel OS sync in the API process | Integration | Done | SB5·3 | CI green (e28ce84), deployed. Only acts once HOTEL_OS_* are set. |
+| Overview per property, last commands | Integration + Frontend | Done | SB5·4 | CI green (e28ce84), deployed. |
 | Frontend: Mandant anlegen (admin) | Frontend | Done | SB0·6 | CI run 43259030276 green; 6d9d6fa deployed, form shown to the admin there. Not yet submitted. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
