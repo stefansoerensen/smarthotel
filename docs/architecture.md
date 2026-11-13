@@ -118,3 +118,15 @@ Meter points keep every value in `meter_readings`; the Hotel OS sync keeps `occu
 Consumption = positive deltas attributed to the interval of the later reading; days and 15-minute
 buckets in local time; a night runs 12:00–12:00 and is occupied when a stay covers its midnight.
 The Hotel OS live P&L reads one night per call from `/api/integrations/hotel-os/v1/energy`.
+
+## Operations (SB5)
+
+- **Users:** admins manage users (`/api/users`); operators belong to one tenant and see its users.
+  The last active admin cannot be deactivated or demoted. Everyone changes their own password.
+- **Bus addresses** come from a pasted or uploaded list (`code;address` or an ETS group address
+  export); KNX addresses are checked. Preview first, then apply.
+- **Background jobs (ADR-0009):** the lifespan starts `app.workers.jobs.run_forever`; every minute,
+  under a Postgres advisory lock, it syncs each enabled Hotel OS link older than
+  `HOTEL_OS_SYNC_MINUTES`.
+- **Overview** per property: rooms by occupancy and mode, average temperature of occupied rooms,
+  faults, gateways, kWh yesterday, open commands.

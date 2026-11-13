@@ -19,26 +19,21 @@ from app.models.integration.hotel_os_link import HotelOsLink
 from app.services.energy import aggregate
 from app.services.integration import faults as faults_service
 from app.services.integration import occupancy
-from app.services.integration.hotel_os import HotelOs, HttpHotelOs
+from app.services.integration import overview as overview_service
+from app.services.integration.hotel_os import HotelOs, configured_client
 
 router = APIRouter(tags=["hotel-os"])
-
-_client: HttpHotelOs | None = None
 
 
 def get_hotel_os_client() -> HotelOs:
     """The configured Hotel OS client; tests override this dependency."""
-    global _client
-    if not (settings.hotel_os_url and settings.hotel_os_username and settings.hotel_os_password):
+    client = configured_client()
+    if client is None:
         raise DomainError(
             "hotel_os.not_configured",
             "HOTEL_OS_URL, HOTEL_OS_USERNAME and HOTEL_OS_PASSWORD are not set",
         )
-    if _client is None:
-        _client = HttpHotelOs(
-            settings.hotel_os_url, settings.hotel_os_username, settings.hotel_os_password
-        )
-    return _client
+    return client
 
 
 class LinkIn(BaseModel):
@@ -310,3 +305,25 @@ async def energy_for_pl(
             for n in items
         ],
     )
+
+
+class OverviewOut(BaseModel):
+    """One-look figures of a property."""
+
+    rooms: dict[str, int]
+    modes: dict[str, int]
+    avg_temperature_occupied: float | None
+    faults: dict[str, int]
+    gateways: dict[str, int]
+    kwh_yesterday: float
+    pending_commands: int
+
+
+@router.get("/properties/{property_code}/overview", response_model=OverviewOut)
+async def property_overview(
+    prop: Property = Depends(get_scoped_property),
+    db: AsyncSession = Depends(get_db),
+    clock: Clock = Depends(get_clock),
+) -> OverviewOut:
+    """Rooms by occupancy and mode, comfort, faults, gateways, energy yesterday, open commands."""
+    return OverviewOut(**await overview_service.overview(db, prop, now=clock.now()))

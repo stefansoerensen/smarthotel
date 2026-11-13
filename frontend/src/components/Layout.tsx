@@ -1,4 +1,4 @@
-import { Building2, LogOut } from "lucide-react";
+import { Building2, LogOut, Users } from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
 import { useAuthStore } from "../hooks/useAuthStore";
 
@@ -12,6 +12,9 @@ export default function Layout() {
           <Building2 size={18} aria-hidden /> Smart Building
         </Link>
         <div className="flex items-center gap-4 text-ink/70">
+          <Link to="/users" className="flex items-center gap-1 hover:text-burgundy">
+            <Users size={16} aria-hidden /> Benutzer
+          </Link>
           <span>
             {user?.username}
             {user?.tenant_code ? ` · ${user.tenant_code}` : ""}

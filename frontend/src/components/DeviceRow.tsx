@@ -99,7 +99,10 @@ export default function DeviceRow({ device, catalogue, onSave, onRetire }: Devic
         )}
       </td>
       <td className="p-2">{labelOf(device.kind)}</td>
-      <td className="p-2">{device.protocol}</td>
+      <td className="p-2">
+        {device.protocol}
+        {device.address && <span className="ml-1 font-mono text-xs text-ink/60">{device.address}</span>}
+      </td>
       <td className="p-2">
         {device.safety ? (
           <span className="inline-flex items-center gap-1 rounded bg-burgundy-light px-2 py-0.5 text-xs text-burgundy">

@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     hotel_os_password: str = ""
     hotel_os_webhook_token: str = ""
     hotel_os_inbox_key: str = ""
+    # Background jobs in the API process (ADR-0009).
+    run_jobs: bool = True
+    hotel_os_sync_minutes: int = 10
 
     @field_validator("database_url", mode="after")
     @classmethod

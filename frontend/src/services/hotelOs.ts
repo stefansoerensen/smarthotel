@@ -1,4 +1,4 @@
-import type { Fault, HotelOsLink, HotelOsLinkInput, SyncResult } from "../types";
+import type { Fault, HotelOsLink, HotelOsLinkInput, Overview, SyncResult } from "../types";
 import { api } from "./api";
 
 const base = (propertyCode: string) => `/properties/${encodeURIComponent(propertyCode)}`;
@@ -17,4 +17,8 @@ export async function sync(propertyCode: string): Promise<SyncResult> {
 
 export async function listFaults(propertyCode: string): Promise<{ property_code: string; items: Fault[] }> {
   return (await api.get<{ property_code: string; items: Fault[] }>(`${base(propertyCode)}/faults`)).data;
+}
+
+export async function getOverview(propertyCode: string): Promise<Overview> {
+  return (await api.get<Overview>(`${base(propertyCode)}/overview`)).data;
 }

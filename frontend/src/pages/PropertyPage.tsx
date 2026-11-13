@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import AddressImportDialog from "../components/AddressImportDialog";
+import CommandsPanel from "../components/CommandsPanel";
 import DeviceRegistry from "../components/DeviceRegistry";
+import OverviewBar from "../components/OverviewBar";
 import EnergyTab from "../components/EnergyTab";
 import GatewaysPanel from "../components/GatewaysPanel";
 import HotelOsTab from "../components/HotelOsTab";
@@ -28,6 +31,7 @@ export default function PropertyPage() {
   const [property, setProperty] = useState<Property | null>(null);
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [registryVersion, setRegistryVersion] = useState(0);
   const isAdmin = useAuthStore((s) => s.user?.role === "admin");
   const [propertyDraft, setPropertyDraft] = useState<{
     name: string;
@@ -131,6 +135,8 @@ export default function PropertyPage() {
         </div>
       )}
 
+      <OverviewBar propertyCode={code} />
+
       <nav role="tablist" aria-label="Bereiche des Hauses" className="flex gap-1 border-b border-ink/10">
         {TABS.map((t) => (
           <button
@@ -155,7 +161,9 @@ export default function PropertyPage() {
       {tab === "geraete" && (
         <>
           <GatewaysPanel propertyCode={code} />
-          <DeviceRegistry propertyCode={code} catalogue={catalogue} />
+          <DeviceRegistry key={registryVersion} propertyCode={code} catalogue={catalogue} />
+          <AddressImportDialog propertyCode={code} onDone={() => setRegistryVersion((v) => v + 1)} />
+          <CommandsPanel propertyCode={code} />
         </>
       )}
       {tab === "energie" && <EnergyTab propertyCode={code} />}

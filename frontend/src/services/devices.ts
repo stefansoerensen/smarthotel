@@ -1,4 +1,4 @@
-import type { Catalogue, Device, DeviceInput, DevicePatch, Gateway, GatewayToken, Page } from "../types";
+import type { AddressImport, Catalogue, Command, Device, DeviceInput, DevicePatch, Gateway, GatewayToken, Page } from "../types";
 import { api } from "./api";
 
 export async function getCatalogue(): Promise<Catalogue> {
@@ -49,4 +49,14 @@ export async function registerGateway(propertyCode: string, input: { code: strin
 /** A new token for the gateway; the previous one stops working. Shown once. */
 export async function createGatewayToken(propertyCode: string, gatewayCode: string): Promise<GatewayToken> {
   return (await api.post<GatewayToken>(`${gatewaysUrl(propertyCode)}/${encodeURIComponent(gatewayCode)}/token`)).data;
+}
+
+/** Bus addresses from "code;address" lines or an ETS export; a preview unless ``apply``. */
+export async function importAddresses(propertyCode: string, text: string, apply: boolean): Promise<AddressImport> {
+  const url = `/properties/${encodeURIComponent(propertyCode)}/devices/addresses`;
+  return (await api.post<AddressImport>(url, text, { params: { apply }, headers: { "Content-Type": "text/plain" } })).data;
+}
+
+export async function listCommands(propertyCode: string): Promise<Page<Command>> {
+  return (await api.get<Page<Command>>(`/properties/${encodeURIComponent(propertyCode)}/commands`, { params: { limit: 20 } })).data;
 }

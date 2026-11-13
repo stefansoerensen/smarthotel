@@ -11,11 +11,12 @@ b57), Railway variables for the coupling and an edge container (hub b58).**
 |---|---|---|
 | SB0 — Foundation | 7 / 7 | Done and verified on the deployed app. |
 | SB1 — Device model, templates, twin, room simulator | 4 / 5 | Green in CI, deployed. Rollout on Railway still to be done once by Stefan. |
-| SB2 — Edge gateway against the simulator | 4 / 4 | Green in CI, deployed; edge API answers 401 without token. No gateway container runs yet (b58). |
+| SB2 — Edge gateway against the simulator | 4 / 4 | Verified: the edge container runs on Railway (Stefan, 2026-11-13, after d8cd8af). |
 | SB3 — Coupling with the Hotel OS | 5 / 5 | Green in CI, deployed; webhook and inbox endpoint answer 401 without secret. Not linked to pms-clone yet (b57, b58). |
 | SB4 — Energy | 5 / 5 | Green in CI (05cd509), deployed; energy endpoints answer on Railway. |
+| SB5 — Operations | 4 / 5 | Pushed; CI not read yet. |
 
-Counts: 46 endpoints · 14 tables · 71 backend tests (+2 migration) · 14 edge tests · 50 frontend tests.
+Counts: 52 endpoints · 14 tables · 91 backend tests (+2 migration) · 20 edge tests · 56 frontend tests.
 
 ## 2. Features
 
@@ -50,6 +51,10 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 | Meter history, occupancy periods, energy per 15 min / day / night | Energy | Done | SB4·1–3 | CI green (05cd509), deployed. |
 | Energy for the Hotel OS live P&L | Integration | Done | SB4·3 | CI green (05cd509), deployed. pms-clone does not read it yet. |
 | Frontend: Energie tab, price per kWh | Frontend | Done | SB4·4 | CI green (05cd509), deployed. |
+| Users: create, reset password, deactivate; own password | Platform + Frontend | In progress | SB5·1 | Pushed; CI not read yet. |
+| Bus address import (CSV, ETS export) | Devices + Frontend | In progress | SB5·2 | Pushed; CI not read yet. |
+| Periodic Hotel OS sync in the API process | Integration | In progress | SB5·3 | Pushed; CI not read yet. Only acts once HOTEL_OS_* are set. |
+| Overview per property, last commands | Integration + Frontend | In progress | SB5·4 | Pushed; CI not read yet. |
 | Frontend: Mandant anlegen (admin) | Frontend | Done | SB0·6 | CI run 43259030276 green; 6d9d6fa deployed, form shown to the admin there. Not yet submitted. |
 | CI workflow, Dockerfile | Delivery | Done | SB0·7 | Image built and smoke-tested in CI. |
 | Railway deployment | Delivery | Verified | SB0·7 | Commit 39ab656 deployed; `/api/health` reports the database. |
@@ -100,3 +105,6 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
   temporary buffer; missing variables are named; a refused token or request is logged and retried
   instead of ending the process; `edge/railway.json`. The actual Railway log was not seen; unverified
   until the service runs.
+- 2026-11-13 — Edge container runs on Railway (Stefan).
+- 2026-11-13 — SB5: users, bus address import, periodic Hotel OS sync (ADR-0009), overview, last
+  commands.

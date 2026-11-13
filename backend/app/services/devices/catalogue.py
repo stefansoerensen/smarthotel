@@ -5,6 +5,8 @@ platform must be able to see. Safety kinds are read by the platform and never co
 (d12, ADR-0003): fire protection, smoke extraction, sprinklers, emergency lighting, evacuation.
 """
 
+import re
+
 DEVICE_KINDS: dict[str, str] = {
     "temperature_sensor": "Raumtemperatur",
     "thermostat": "Sollwertgeber / Raumbediengerät",
@@ -71,3 +73,22 @@ SENSOR_KINDS: frozenset[str] = frozenset(
 def can_write(kind: str) -> bool:
     """True for kinds the platform may set (set points, valves, lights, blinds, locks …)."""
     return kind not in SENSOR_KINDS and kind not in SAFETY_KINDS
+
+
+_KNX = re.compile(r"^(\d{1,2})/(\d{1,2})/(\d{1,3})$")
+
+
+def valid_knx(address: str) -> bool:
+    """A three-level KNX group address: main 0–31, middle 0–7, sub 0–255."""
+    match = _KNX.match(address)
+    if not match:
+        return False
+    main, middle, sub = (int(part) for part in match.groups())
+    return main <= 31 and middle <= 7 and sub <= 255
+
+
+def check_address(protocol: str, address: str) -> str | None:
+    """A German error message when ``address`` is invalid for ``protocol``, else None."""
+    if protocol == "knx" and not valid_knx(address):
+        return f"Keine gültige KNX-Gruppenadresse: {address}"
+    return None

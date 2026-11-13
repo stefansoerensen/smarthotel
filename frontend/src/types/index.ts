@@ -253,3 +253,50 @@ export interface EnergyNights {
     cost_per_occupied_night_eur: string | null;
   };
 }
+
+export interface UserEntry {
+  username: string;
+  role: "admin" | "operator";
+  tenant_code: string | null;
+  is_active: boolean;
+}
+
+export interface UserInput {
+  username: string;
+  password: string;
+  role: "admin" | "operator";
+  tenant_code?: string;
+}
+
+export interface UserPatch {
+  password?: string;
+  is_active?: boolean;
+}
+
+export interface AddressImport {
+  applied: boolean;
+  changes: { line: number; device_code: string; old: string | null; new: string }[];
+  errors: { line: number; message: string }[];
+}
+
+export interface Command {
+  id: string;
+  device_code: string;
+  point_key: string;
+  value: number;
+  status: "pending" | "sent" | "done" | "failed" | "refused";
+  created_at: string;
+  sent_at: string | null;
+  acked_at: string | null;
+  detail: string | null;
+}
+
+export interface Overview {
+  rooms: { total: number; occupied: number; arriving: number; vacant: number; unknown: number };
+  modes: { comfort: number; preheat: number; eco: number };
+  avg_temperature_occupied: number | null;
+  faults: { total: number; blocker: number; today: number; attention: number };
+  gateways: { total: number; online: number; offline: number; never: number };
+  kwh_yesterday: number;
+  pending_commands: number;
+}

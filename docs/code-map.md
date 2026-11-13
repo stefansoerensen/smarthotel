@@ -44,6 +44,10 @@
 | `models/twin/history.py` | `MeterReading`, `OccupancyPeriod` |
 | `services/energy/aggregate.py` | Buckets, local days, nights, cost |
 | `api/native/energy.py` | Energy series and nights |
+| `api/native/users.py` | Users (admins), own password |
+| `services/devices/addresses.py` | Address list parsing and import |
+| `services/integration/overview.py` | Overview figures per property |
+| `workers/jobs.py` | Background jobs: periodic Hotel OS sync, advisory lock |
 | `seed/bootstrap.py` | Pre-deploy: administrator from env, dev users outside production |
 | `alembic/versions/0001_sb0_foundation.py` | All SB0 tables |
 
@@ -90,6 +94,11 @@
 | GET | `/integrations/hotel-os/v1/energy?property_code=&date=` | Hotel OS live P&L, `X-Api-Key` |
 | GET | `/properties/{code}/energy?from&to&resolution&room` | signed in (scoped) |
 | GET | `/properties/{code}/energy/nights?from&to` | signed in (scoped) |
+| GET | `/users` | signed in (operators: own tenant) |
+| POST, PATCH | `/users`, `/users/{username}` | admin |
+| POST | `/auth/password` | signed in; own password |
+| POST | `/properties/{code}/devices/addresses?apply=` | signed in (scoped); text body |
+| GET | `/properties/{code}/overview` | signed in (scoped) |
 | POST | `/edge/v1/commands/{id}/ack` | gateway token |
 
 ## Tables (schema `smarthotel`)
@@ -116,6 +125,10 @@
 | `components/GatewaysPanel.tsx` | Gateways: status, register, token shown once |
 | `components/HotelOsTab.tsx`, `services/hotelOs.ts` | Hotel OS tab: link, price, sync, faults |
 | `components/EnergyTab.tsx`, `services/energy.ts` | Energie tab: totals, per night, bars per day |
+| `pages/UsersPage.tsx`, `services/users.ts` | Benutzer: list, create, reset, deactivate; own password |
+| `components/AddressImportDialog.tsx` | Busadressen importieren (preview, apply) |
+| `components/CommandsPanel.tsx` | Letzte Befehle |
+| `components/OverviewBar.tsx` | Figures at the top of the Haus page |
 
 ## Edge (`edge/edge_gateway/`)
 

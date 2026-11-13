@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as devices from "../services/devices";
 import * as estate from "../services/estate";
+import * as hotelOs from "../services/hotelOs";
 import { useAuthStore } from "../hooks/useAuthStore";
 import type { Device } from "../types";
 import PropertyPage from "./PropertyPage";
@@ -55,6 +56,8 @@ describe("PropertyPage", () => {
     });
     vi.spyOn(devices, "listDevices").mockResolvedValue({ items: [valve, smoke], total: 2 });
     vi.spyOn(devices, "listGateways").mockResolvedValue({ items: [], total: 0 });
+    vi.spyOn(devices, "listCommands").mockResolvedValue({ items: [], total: 0 });
+    vi.spyOn(hotelOs, "getOverview").mockRejectedValue({ status: 404, code: null, message: "x" });
   });
 
   it("lists the registry and marks safety devices read only", async () => {

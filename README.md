@@ -15,6 +15,7 @@ Prototype status: built and accepted against simulators only; nothing runs in a 
 | SB2 | Edge-Gateway: lokale Regeln, Puffer, Befehle mit Quittung | [plan](docs/superpowers/plans/2026-11-12-plan-sb2-edge-gateway.md) |
 | SB3 | Kopplung Hotel OS: Belegung → Raummodus, Störungen → Inbox | [plan](docs/superpowers/plans/2026-11-12-plan-sb3-hotel-os.md) |
 | SB4 | Energie je 15 min, Tag und belegter Nacht | [plan](docs/superpowers/plans/2026-11-12-plan-sb4-energy.md) |
+| SB5 | Benutzer, Busadressen-Import, automatischer Abgleich, Überblick | [plan](docs/superpowers/plans/2026-11-13-plan-sb5-operations.md) |
 
 - Working agreement: [CLAUDE.md](CLAUDE.md)
 - What works: [docs/feature-status.md](docs/feature-status.md)

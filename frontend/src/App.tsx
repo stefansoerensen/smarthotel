@@ -5,6 +5,7 @@ import { useAuthStore } from "./hooks/useAuthStore";
 import LoginPage from "./pages/LoginPage";
 import PropertiesPage from "./pages/PropertiesPage";
 import PropertyPage from "./pages/PropertyPage";
+import UsersPage from "./pages/UsersPage";
 import { me } from "./services/auth";
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/properties" replace />} />
         <Route path="/properties" element={<PropertiesPage />} />
         <Route path="/properties/:code" element={<PropertyPage />} />
+        <Route path="/users" element={<UsersPage />} />
         <Route path="*" element={<Navigate to="/properties" replace />} />
       </Route>
     </Routes>

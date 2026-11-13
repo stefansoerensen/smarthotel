@@ -118,7 +118,8 @@ Two directions, two kinds of setup:
 - **pms-clone asks Smart Building.** pms-clone needs two things that are not built in pms-clone yet
   (hub b57): a webhook subscription that tells Smart Building "a reservation changed", and an inbox
   source that fetches the building faults from Smart Building and shows them in the exception inbox.
-  Until then the coupling works one way, by pressing "Jetzt abgleichen".
+  Until then the coupling works one way: Smart Building syncs every 10 minutes by itself, and
+  "Jetzt abgleichen" syncs at once.
 
 Variables on the Smart Building `app` service:
 
@@ -128,6 +129,8 @@ Variables on the Smart Building `app` service:
 | `HOTEL_OS_USERNAME`, `HOTEL_OS_PASSWORD` | A user in pms-clone that may read properties and reservations |
 | `HOTEL_OS_WEBHOOK_TOKEN` | A fresh random string (`openssl rand -hex 24`); pms-clone puts it into the webhook URL |
 | `HOTEL_OS_INBOX_KEY` | Another fresh random string; pms-clone sends it as `X-Api-Key` |
+| `HOTEL_OS_SYNC_MINUTES` | Optional, default 10: the app syncs every linked property this often by itself (ADR-0009) |
+| `RUN_JOBS` | Optional, default `true`; `false` switches the background sync off |
 
 What pms-clone will call (b57):
 

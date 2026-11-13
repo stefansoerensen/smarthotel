@@ -1,6 +1,9 @@
 """FastAPI application factory."""
 
+import asyncio
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI
@@ -66,9 +69,31 @@ def mount_static(app: FastAPI) -> None:
     logger.info("serving the frontend from %s", static_dir)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Start the background jobs when enabled and cancel them on shutdown (ADR-0009)."""
+    task: asyncio.Task[None] | None = None
+    if settings.run_jobs:
+        from app.workers.jobs import run_forever
+
+        task = asyncio.create_task(run_forever(), name="jobs")
+        logger.info("background jobs running in-process")
+    app.state.jobs = task
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+
 def create_app() -> FastAPI:
     """Build the FastAPI application with middleware, routers and handlers."""
-    app = FastAPI(title="Smart Building", version="0.1.0")
+    app = FastAPI(title="Smart Building", version="0.1.0", lifespan=lifespan)
+    app.state.jobs = None
     app.state.login_limiter = RateLimiter(max_calls=10, period_seconds=60)
     app.add_middleware(
         CORSMiddleware,

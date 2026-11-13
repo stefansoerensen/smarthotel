@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import DomainError, NotFoundError
@@ -96,3 +96,13 @@ async def list_for_property(
     """Commands of a property, newest first."""
     stmt = select(Command).where(Command.property_id == prop.id).order_by(Command.created_at.desc())
     return await paginate(session, stmt, skip=skip, limit=limit)
+
+
+async def count_open(session: AsyncSession, prop: Property) -> int:
+    """Commands of ``prop`` not yet acknowledged (pending or sent)."""
+    result = await session.execute(
+        select(func.count())
+        .select_from(Command)
+        .where(Command.property_id == prop.id, Command.status.in_(("pending", "sent")))
+    )
+    return int(result.scalar_one())

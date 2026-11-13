@@ -220,6 +220,11 @@ async def update_device(
     kind = changes.get("kind") or device.kind
     protocol = changes.get("protocol") or device.protocol
     _check_kind_and_protocol(kind, protocol)
+    problem = (
+        catalogue.check_address(protocol, changes["address"]) if changes.get("address") else None
+    )
+    if problem:
+        raise DomainError("device.invalid_address", problem)
     if catalogue.is_safety(kind):
         if changes.get("controllable"):
             raise _safety_read_only()

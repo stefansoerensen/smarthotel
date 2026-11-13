@@ -11,6 +11,7 @@ os.environ["DATABASE_URL"] = os.environ.get(
 )
 os.environ.setdefault("JWT_SECRET", "test-secret-not-for-production-0123456789")
 os.environ.setdefault("ENVIRONMENT", "test")
+os.environ.setdefault("RUN_JOBS", "false")
 
 import pytest  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402

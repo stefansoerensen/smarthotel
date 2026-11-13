@@ -112,3 +112,20 @@ class HttpHotelOs:
             )
             for item in [*in_house["items"], *arriving["items"]]
         ]
+
+
+_client: HttpHotelOs | None = None
+
+
+def configured_client() -> HttpHotelOs | None:
+    """The Hotel OS client from the ``HOTEL_OS_*`` settings, or None when they are not set."""
+    from app.core.config import settings
+
+    global _client
+    if not (settings.hotel_os_url and settings.hotel_os_username and settings.hotel_os_password):
+        return None
+    if _client is None:
+        _client = HttpHotelOs(
+            settings.hotel_os_url, settings.hotel_os_username, settings.hotel_os_password
+        )
+    return _client

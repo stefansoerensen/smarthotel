@@ -1,6 +1,7 @@
 """The device registry of a property, and the device catalogue."""
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Body, Depends, Query, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_clock, get_current_user, get_db, get_scoped_property
@@ -21,7 +22,7 @@ from app.schemas.native.devices import (
     GatewayTokenOut,
     KindOut,
 )
-from app.services.devices import catalogue, registry
+from app.services.devices import addresses, catalogue, registry
 
 router = APIRouter(tags=["devices"])
 
@@ -205,3 +206,45 @@ async def retire_device(
     out = await _one(db, device)
     await db.commit()
     return out
+
+
+class AddressChangeOut(BaseModel):
+    """An address that changes."""
+
+    line: int
+    device_code: str
+    old: str | None
+    new: str
+
+
+class AddressErrorOut(BaseModel):
+    """A line that could not be used."""
+
+    line: int
+    message: str
+
+
+class AddressImportOut(BaseModel):
+    """Result of an import: preview or applied."""
+
+    applied: bool
+    changes: list[AddressChangeOut]
+    errors: list[AddressErrorOut]
+
+
+@router.post("/properties/{property_code}/devices/addresses", response_model=AddressImportOut)
+async def import_addresses(
+    text: str = Body(..., media_type="text/plain", max_length=2_000_000),
+    apply: bool = False,
+    prop: Property = Depends(get_scoped_property),
+    db: AsyncSession = Depends(get_db),
+) -> AddressImportOut:
+    """Bus addresses from ``code;address`` lines or an ETS export; preview unless ``apply``."""
+    changes, errors = await addresses.import_addresses(db, prop, text, apply=apply)
+    if apply:
+        await db.commit()
+    return AddressImportOut(
+        applied=apply,
+        changes=[AddressChangeOut(**c.__dict__) for c in changes],
+        errors=[AddressErrorOut(**e.__dict__) for e in errors],
+    )
