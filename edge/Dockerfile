@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY edge_gateway ./edge_gateway
-RUN useradd --create-home app && mkdir -p /data && chown app /data
-USER app
-VOLUME ["/data"]
+# No VOLUME here: Railway refuses it. Attach a volume at /data in the service; it is mounted as
+# root, so the process runs as root to write its buffer there (it has no open port).
+RUN mkdir -p /data
 CMD ["python", "-m", "edge_gateway"]

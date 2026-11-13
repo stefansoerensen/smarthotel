@@ -6,7 +6,11 @@ import httpx
 
 
 class CloudUnavailable(Exception):
-    """The control plane could not be reached or answered with a server error."""
+    """The control plane could not be reached, answered with a server error or refused the token."""
+
+
+class CloudRejected(Exception):
+    """The control plane refused one request (4xx other than 401); retrying it will not help."""
 
 
 class Cloud:
@@ -26,7 +30,12 @@ class Cloud:
             raise CloudUnavailable(str(exc)) from exc
         if response.status_code >= 500:
             raise CloudUnavailable(f"HTTP {response.status_code}")
-        response.raise_for_status()
+        if response.status_code in (401, 403):
+            raise CloudUnavailable(
+                "token refused (HTTP 401): create a new token in Geräte → Gateway and set EDGE_TOKEN"
+            )
+        if response.status_code >= 400:
+            raise CloudRejected(f"HTTP {response.status_code} for {path}: {response.text[:200]}")
         return response.json()
 
     def hello(self) -> dict[str, Any]:

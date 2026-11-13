@@ -7,7 +7,7 @@ from datetime import datetime
 
 from edge_gateway.buffer import Buffer
 from edge_gateway.bus import Bus
-from edge_gateway.cloud import Cloud, CloudUnavailable
+from edge_gateway.cloud import Cloud, CloudRejected, CloudUnavailable
 from edge_gateway.rules import room_writes
 
 logger = logging.getLogger(__name__)
@@ -93,18 +93,28 @@ class Gateway:
             if self.online:
                 logger.warning("cloud unreachable, buffering: %s", exc)
             self.online = False
+        except CloudRejected as exc:
+            logger.error("cloud refused a request: %s", exc)
 
     def _flush(self) -> None:
         while True:
             batch = self.buffer.peek(BATCH)
             if not batch:
                 return
-            self.cloud.send_readings(
-                [
-                    {"device_code": r.device_code, "value": r.value, "measured_at": r.measured_at}
-                    for r in batch
-                ]
-            )
+            try:
+                self.cloud.send_readings(
+                    [
+                        {
+                            "device_code": r.device_code,
+                            "value": r.value,
+                            "measured_at": r.measured_at,
+                        }
+                        for r in batch
+                    ]
+                )
+            except CloudRejected as exc:
+                # The cloud will never accept this batch; keeping it would block all later readings.
+                logger.error("dropping %d readings the cloud refused: %s", len(batch), exc)
             self.buffer.remove([r.id for r in batch])
 
     def _execute(self, command: dict) -> None:
@@ -125,5 +135,8 @@ class Gateway:
     def _retry_acks(self) -> None:
         while self.pending_acks:
             command_id, status, detail = self.pending_acks[0]
-            self.cloud.ack(command_id, status, detail)
+            try:
+                self.cloud.ack(command_id, status, detail)
+            except CloudRejected as exc:
+                logger.error("ack for %s refused: %s", command_id, exc)
             self.pending_acks.pop(0)

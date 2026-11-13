@@ -1,4 +1,7 @@
+import os
 from pathlib import Path
+
+import pytest
 
 from edge_gateway.buffer import Buffer
 
@@ -18,3 +21,14 @@ def test_configuration_is_kept(tmp_path: Path) -> None:
     path = str(tmp_path / "edge.sqlite")
     Buffer(path).save_config({"gateway_code": "GW", "devices": []})
     assert Buffer(path).load_config() == {"gateway_code": "GW", "devices": []}
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root can write anywhere")
+def test_unwritable_path_falls_back_to_a_temporary_file(tmp_path: Path) -> None:
+    blocked = tmp_path / "ro"
+    blocked.mkdir()
+    blocked.chmod(0o500)
+    buffer = Buffer(str(blocked / "sub" / "edge.sqlite"))
+    buffer.add([("A", 1.0, "2026-11-12T08:00:00+00:00")])
+    assert buffer.count() == 1
+    assert buffer.path != str(blocked / "sub" / "edge.sqlite")

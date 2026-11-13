@@ -201,3 +201,34 @@ def test_scenario_opens_a_window_at_its_minute() -> None:
     assert bus.read("W") == 1.0
     bus.advance(60)
     assert bus.read("W") == 0.0
+
+
+def test_rejected_token_does_not_crash_the_gateway(setup) -> None:
+    gateway, fake, clock, buses = setup
+    original = fake.handler
+
+    def reject(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, json={"detail": "Unknown gateway"})
+
+    gateway.cloud.client = httpx.Client(transport=httpx.MockTransport(reject))
+    gateway.tick(1)
+    assert gateway.online is False
+    assert gateway.buffer.count() > 0
+    gateway.cloud.client = httpx.Client(transport=httpx.MockTransport(original))
+    gateway.tick(1)
+    assert gateway.buffer.count() == 0
+
+
+def test_a_rejected_reading_batch_is_dropped_instead_of_blocking(setup) -> None:
+    gateway, fake, clock, buses = setup
+    original = fake.handler
+
+    def reject_readings(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/edge/v1/readings":
+            return httpx.Response(422, json={"detail": "bad"})
+        return original(request)
+
+    gateway.cloud.client = httpx.Client(transport=httpx.MockTransport(reject_readings))
+    gateway.tick(1)
+    assert gateway.buffer.count() == 0
+    assert gateway.online is True

@@ -95,3 +95,8 @@ deployed app) · `Unverified` (built, checks passed only outside CI).
 - 2026-11-12 — Railway (05cd509): health, gateways, commands, hotel-os, faults, energy, nights answer
   200; `/edge/v1/hello`, webhook and inbox faults answer 401 without secret; unknown `/edge` path is JSON
   404; the new tabs are in the served bundle.
+- 2026-11-13 — Edge on Railway crashed (reported by Stefan). Fixed: no `VOLUME` in the Dockerfile
+  (Railway refuses it); runs as root so a Railway volume at /data is writable, with a fallback to a
+  temporary buffer; missing variables are named; a refused token or request is logged and retried
+  instead of ending the process; `edge/railway.json`. The actual Railway log was not seen; unverified
+  until the service runs.

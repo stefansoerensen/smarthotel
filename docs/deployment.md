@@ -89,30 +89,50 @@ a throwaway database; the `backend` job's *Migration drift* step proves it match
 
 ## Edge gateway (optional, simulated rooms)
 
-The edge gateway is a second image (`edge/Dockerfile`). To watch a property run on its gateway:
+The edge gateway is a second image (`edge/Dockerfile`, config `edge/railway.json`). To watch a
+property run on its gateway:
 
 1. In the app: Haus → Geräte → register a gateway, then "Token erzeugen" (shown once).
-2. Raumtypen → Ausrollen with that gateway selected.
-3. Railway: *New* → *GitHub Repo* → same repository, **Root Directory** `edge`, variables
-   `EDGE_CLOUD_URL` (the app's public URL), `EDGE_TOKEN`, optionally `EDGE_SIM_MINUTES_PER_TICK=5`
-   to make simulated time run faster, and a volume mounted at `/data` for the buffer.
-4. The gateway appears as "online" within one tick; readings arrive in the Zimmer tab.
+2. Raumtypen → Ausrollen with that gateway selected. Without devices behind it the gateway runs but
+   has nothing to do.
+3. Railway: *New* → *GitHub Repo* → same repository. In the new service's *Settings* set
+   **Root Directory** to `edge` — without it Railway builds the app image again, which crashes
+   without its variables.
+4. Variables of the new service: `EDGE_CLOUD_URL` (the app's public URL), `EDGE_TOKEN` (from step 1),
+   optionally `EDGE_SIM_MINUTES_PER_TICK=5` to make simulated time run faster.
+5. Optional: a volume mounted at `/data` keeps the buffer across redeploys. Without it the gateway
+   still runs.
+6. The gateway has no web port: leave *Networking* without a domain and without a health check.
+7. Within one tick the gateway shows "online" in the Geräte tab and readings arrive in Zimmer.
 
-Without a volume the buffer is lost on redeploy — acceptable for the simulator, not for a hotel.
+The log says what is wrong in one line: missing variables (`configuration: Missing variables …`),
+a wrong token (`token refused (HTTP 401) …`), or an unreachable app (`waiting for the cloud …`).
 
 ## Hotel OS coupling (ADR-0007)
 
-Variables on the `app` service:
+Two directions, two kinds of setup:
+
+- **Smart Building reads occupancy from pms-clone.** Smart Building needs the pms-clone URL and a
+  pms-clone user to log in with (variables below). In Smart Building: Haus → Hotel OS → enter the
+  property code as it is in pms-clone → Speichern → Jetzt abgleichen.
+- **pms-clone asks Smart Building.** pms-clone needs two things that are not built in pms-clone yet
+  (hub b57): a webhook subscription that tells Smart Building "a reservation changed", and an inbox
+  source that fetches the building faults from Smart Building and shows them in the exception inbox.
+  Until then the coupling works one way, by pressing "Jetzt abgleichen".
+
+Variables on the Smart Building `app` service:
 
 | Variable | Value |
 |---|---|
 | `HOTEL_OS_URL` | Public URL of the pms-clone app |
-| `HOTEL_OS_USERNAME`, `HOTEL_OS_PASSWORD` | A service user in pms-clone that may read properties and reservations |
-| `HOTEL_OS_WEBHOOK_TOKEN` | A fresh random string (`openssl rand -hex 24`) |
+| `HOTEL_OS_USERNAME`, `HOTEL_OS_PASSWORD` | A user in pms-clone that may read properties and reservations |
+| `HOTEL_OS_WEBHOOK_TOKEN` | A fresh random string (`openssl rand -hex 24`); pms-clone puts it into the webhook URL |
 | `HOTEL_OS_INBOX_KEY` | Another fresh random string; pms-clone sends it as `X-Api-Key` |
 
-In pms-clone: a webhook subscription to
-`https://<smarthotel app>/api/integrations/hotel-os/webhook?token=<HOTEL_OS_WEBHOOK_TOKEN>` with topic
-`Reservation`, and the inbox source calling
-`https://<smarthotel app>/api/integrations/hotel-os/v1/faults?property_code=<code>` with the key.
-In Smart Building: Haus → Hotel OS → Hauscode of the pms-clone property → Speichern → Jetzt abgleichen.
+What pms-clone will call (b57):
+
+- Webhook, topic `Reservation`:
+  `https://<smarthotel app>/api/integrations/hotel-os/webhook?token=<HOTEL_OS_WEBHOOK_TOKEN>`
+- Inbox: `GET https://<smarthotel app>/api/integrations/hotel-os/v1/faults?property_code=<pms-clone code>`
+  with header `X-Api-Key: <HOTEL_OS_INBOX_KEY>`
+- Live P&L: `GET …/api/integrations/hotel-os/v1/energy?property_code=<code>&date=YYYY-MM-DD`, same key

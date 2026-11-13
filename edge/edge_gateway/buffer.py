@@ -1,9 +1,22 @@
 """A SQLite queue of readings that survives restarts and outages."""
 
 import json
+import logging
 import sqlite3
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+
+def _open(path: str) -> sqlite3.Connection:
+    if path != ":memory:":
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(path)
+    connection.execute("CREATE TABLE IF NOT EXISTS probe (x INTEGER)")
+    connection.execute("DROP TABLE probe")
+    return connection
 
 
 @dataclass(frozen=True)
@@ -20,9 +33,17 @@ class Buffer:
     """Readings waiting for the cloud, oldest first, plus the last known configuration."""
 
     def __init__(self, path: str) -> None:
-        if path != ":memory:":
-            Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(path)
+        try:
+            self.db = _open(path)
+            self.path = path
+        except (OSError, sqlite3.Error) as exc:
+            # A volume mounted read-only or owned by another user must not stop the rooms.
+            fallback = str(Path(tempfile.gettempdir()) / "edge.sqlite")
+            logger.warning(
+                "buffer %s not writable (%s); using %s, lost on restart", path, exc, fallback
+            )
+            self.db = _open(fallback)
+            self.path = fallback
         self.db.execute(
             "CREATE TABLE IF NOT EXISTS readings (id INTEGER PRIMARY KEY AUTOINCREMENT, "
             "device_code TEXT NOT NULL, value REAL NOT NULL, measured_at TEXT NOT NULL)"
